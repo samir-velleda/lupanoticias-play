@@ -1,0 +1,58 @@
+/* ============================================================
+   Lupa Notícias — Design Tokens
+   Paleta monocromática. Copie estes valores para o seu tema
+   (CSS vars, Tailwind theme, tokens do design system, etc.)
+   ============================================================ */
+:root {
+  /* --- Tinta / neutros (texto e superfícies claras) --- */
+  --lupa-ink:        #0B0B0C; /* preto da marca — títulos, botões, ícones */
+  --lupa-ink-soft:   #1C1C20; /* corpo de texto do artigo */
+  --lupa-gray-700:   #3A3A3D; /* texto secundário forte */
+  --lupa-gray-500:   #52525B; /* olho / linha fina do texto */
+  --lupa-gray-400:   #8A8A90; /* metadados, timestamps */
+  --lupa-gray-300:   #9A9AA0; /* legendas, placeholders */
+  --lupa-line:       #E6E6E9; /* divisórias / bordas hairline */
+  --lupa-line-soft:  #EDEDF0; /* divisória mais leve */
+  --lupa-surface:    #FFFFFF; /* fundo principal */
+  --lupa-surface-2:  #F7F7F8; /* caixas / faixas sutis */
+  --lupa-surface-3:  #F1F1F3; /* chips, segmented control */
+
+  /* --- Superfícies escuras (Lupa Play, rodapé, faixas) --- */
+  --lupa-dark:          #0B0B0C;
+  --lupa-dark-line:     #26262A;
+  --lupa-on-dark:       #F3F3F4;
+  --lupa-on-dark-muted: #8A8A90;
+
+  /* --- Tipografia --- */
+  --lupa-font-display: 'Archivo', system-ui, sans-serif;   /* manchetes, UI, wordmark */
+  --lupa-font-serif:   'Newsreader', Georgia, serif;        /* olho, corpo do artigo, citações */
+  --lupa-font-mono:    'IBM Plex Mono', monospace;          /* kickers, tags, metadados, timestamps */
+
+  /* --- Raio --- */
+  --lupa-radius-sm:   4px;
+  --lupa-radius:      8px;
+  --lupa-radius-lg:   14px;
+  --lupa-radius-pill: 999px;
+
+  /* --- Sombra --- */
+  --lupa-shadow-card: 0 40px 90px -30px rgba(10, 10, 15, .45);
+  --lupa-shadow-soft: 0 24px 60px -30px rgba(10, 10, 15, .40);
+
+  /* --- Espaçamento (base 4px) --- */
+  --lupa-space-1: 4px;  --lupa-space-2: 8px;  --lupa-space-3: 12px;
+  --lupa-space-4: 16px; --lupa-space-5: 20px; --lupa-space-6: 26px;
+  --lupa-space-8: 34px; --lupa-space-10: 44px;
+}
+
+/* ------------------------------------------------------------
+   ESCALA TIPOGRÁFICA (valores usados nas telas)
+   Manchete hero (desktop)  Archivo 800  38–46px / 1.05 / -0.02em
+   H1 categoria             Archivo 900  56px    / 1.00 / -0.03em
+   H1 artigo                Archivo 800  46px    / 1.06 / -0.02em
+   Card título grande       Archivo 700  20–22px / 1.15
+   Card título pequeno      Archivo 700  15–18px / 1.20
+   Olho / standfirst        Newsreader   19–22px / 1.45–1.50
+   Corpo do artigo          Newsreader   19px    / 1.75
+   Citação (pull-quote)     Newsreader italic 500  27px / 1.30
+   Kicker / tag / meta      IBM Plex Mono 600  10–12px / letter-spacing .12–.16em / UPPERCASE
+   ------------------------------------------------------------ */

@@ -1,0 +1,39 @@
+/* Design tokens (fonte: brand/tokens.css → src/styles/tokens.css).
+   @import DEVE preceder qualquer outra regra (antes dos @tailwind). */
+@import '../styles/tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--lupa-surface);
+    color: var(--lupa-ink);
+    font-family: var(--lupa-font-display);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Foco visível (acessibilidade AA — CLAUDE.md §5). */
+  :focus-visible {
+    outline: 2px solid var(--lupa-ink);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Kicker / tag / metadados — IBM Plex Mono, CAIXA ALTA, tracking largo. */
+  .lupa-kicker {
+    font-family: var(--lupa-font-mono);
+    font-weight: 600;
+    font-size: 0.6875rem; /* 11px */
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--lupa-gray-500);
+  }
+}
