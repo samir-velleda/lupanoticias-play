@@ -1,0 +1,29 @@
+{
+  "name": "@lupa/infra",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AWS CDK (TypeScript) — fundação isolada lupa-* na conta Boovest (us-east-1).",
+  "bin": {
+    "lupa": "bin/lupa.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "synth": "cdk synth 'Lupa*-dev'",
+    "synth:prod": "cdk synth 'Lupa*-prod'",
+    "diff": "cdk diff 'Lupa*-dev'",
+    "diff:prod": "cdk diff 'Lupa*-prod'",
+    "deploy": "cdk deploy 'Lupa*-dev'",
+    "deploy:prod": "cdk deploy 'Lupa*-prod'",
+    "list": "cdk list"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "aws-cdk": "^2.170.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.170.0",
+    "constructs": "^10.3.0"
+  }
+}

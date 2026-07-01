@@ -1,0 +1,35 @@
+# deps
+node_modules/
+
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# web (Next)
+web/.next/
+web/out/
+
+# infra (CDK)
+infra/cdk.out/
+infra/cdk.context.json
+infra/*.d.ts
+infra/*.js
+!infra/jest.config.js
+
+# mobile (Capacitor)
+mobile/ios/App/Pods/
+mobile/android/.gradle/
+mobile/android/app/build/
+
+# signing / certs
+*.keystore
+*.jks
+*.p8
+*.p12
+*.mobileprovision
+*.pem
+
+# os / misc
+.DS_Store
+*.log

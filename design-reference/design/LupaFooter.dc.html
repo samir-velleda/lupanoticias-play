@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<footer style="background:#0b0b0c;color:#f3f3f4;font-family:'Archivo',system-ui,sans-serif;padding:52px 44px 26px;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:32px;flex-wrap:wrap;padding-bottom:30px;border-bottom:1px solid #26262a;">
+    <div style="max-width:360px;">
+      <div style="display:flex;align-items:center;gap:12px;color:#fff;">
+        <svg width="40" height="40" viewBox="0 0 48 48" fill="none" aria-label="Lupa">
+          <path d="M32 11 A15 15 0 1 0 32 33" stroke="currentColor" stroke-width="4.6" stroke-linecap="round"></path>
+          <path d="M18 14.5 L18 29.5 L31 22 Z" fill="currentColor"></path>
+        </svg>
+        <div style="display:flex;align-items:baseline;gap:0.18em;line-height:.9;">
+          <span style="font-weight:800;font-size:23px;letter-spacing:-.01em;">LUPA</span>
+          <span style="font-weight:500;font-size:23px;letter-spacing:.02em;color:#b8b8bd;">NOTÍCIAS</span>
+        </div>
+      </div>
+      <p style="margin:18px 0 0;font-family:'Newsreader',Georgia,serif;font-size:16px;line-height:1.55;color:#a9a9b0;">Jornalismo com foco no que importa. Apuração independente, contexto e clareza — todos os dias.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-start;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;color:#6c6c74;text-transform:uppercase;">Siga a Lupa</span>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:14px;font-weight:600;color:#e8e8ea;">
+        <span style="cursor:pointer;">Instagram</span>
+        <span style="cursor:pointer;">YouTube</span>
+        <span style="cursor:pointer;">X</span>
+        <span style="cursor:pointer;">WhatsApp</span>
+        <span style="cursor:pointer;">RSS</span>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:10px;align-items:center;">
+        <input placeholder="Seu e-mail" style="background:#161619;border:1px solid #33333a;color:#fff;padding:11px 14px;font-size:14px;border-radius:8px;width:210px;font-family:'Archivo',sans-serif;"/>
+        <button style="background:#fff;color:#0b0b0c;border:none;padding:11px 18px;font-size:14px;font-weight:700;border-radius:8px;cursor:pointer;font-family:'Archivo',sans-serif;">Assinar</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:28px;padding:34px 0;">
+    <div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;color:#6c6c74;text-transform:uppercase;margin-bottom:16px;">Editorias</div>
+      <div style="display:flex;flex-direction:column;gap:11px;font-size:14.5px;color:#c9c9ce;">
+        <span style="cursor:pointer;">Política</span><span style="cursor:pointer;">Economia</span><span style="cursor:pointer;">Mundo</span><span style="cursor:pointer;">Esportes</span><span style="cursor:pointer;">Cultura</span>
+      </div>
+    </div>
+    <div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;color:#6c6c74;text-transform:uppercase;margin-bottom:16px;">Mais</div>
+      <div style="display:flex;flex-direction:column;gap:11px;font-size:14.5px;color:#c9c9ce;">
+        <span style="cursor:pointer;">Tecnologia</span><span style="cursor:pointer;">Ciência</span><span style="cursor:pointer;">Saúde</span><span style="cursor:pointer;">Cidades</span><span style="cursor:pointer;">Opinião</span>
+      </div>
+    </div>
+    <div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;color:#6c6c74;text-transform:uppercase;margin-bottom:16px;">Institucional</div>
+      <div style="display:flex;flex-direction:column;gap:11px;font-size:14.5px;color:#c9c9ce;">
+        <span style="cursor:pointer;">Quem somos</span><span style="cursor:pointer;">Princípios editoriais</span><span style="cursor:pointer;">Expediente</span><span style="cursor:pointer;">Trabalhe conosco</span><span style="cursor:pointer;">Anuncie</span>
+      </div>
+    </div>
+    <div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;color:#6c6c74;text-transform:uppercase;margin-bottom:16px;">Serviços</div>
+      <div style="display:flex;flex-direction:column;gap:11px;font-size:14.5px;color:#c9c9ce;">
+        <span style="cursor:pointer;">Newsletters</span><span style="cursor:pointer;">Assine Premium</span><span style="cursor:pointer;">App Lupa</span><span style="cursor:pointer;">Central de ajuda</span><span style="cursor:pointer;">Fale conosco</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;padding-top:22px;border-top:1px solid #26262a;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#7a7a82;">
+    <span>© 2026 Lupa Notícias — CNPJ 00.000.000/0001-00</span>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;">
+      <span style="cursor:pointer;">Termos de Uso</span><span style="cursor:pointer;">Política de Privacidade</span><span style="cursor:pointer;">Preferências de cookies</span>
+    </div>
+  </div>
+</footer>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:420}}"></script>
+</body>
+</html>

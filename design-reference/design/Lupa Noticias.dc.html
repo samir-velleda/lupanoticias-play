@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  body{margin:0;background:#e7e7ea;font-family:'Archivo',system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+  @keyframes lupaPulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.3;transform:scale(.6);}}
+  image-slot{display:block;}
+</style>
+<script src="image-slot.js"></script>
+</helmet>
+
+<div style="padding:60px 60px 120px;display:flex;flex-direction:column;gap:70px;width:max-content;">
+
+  <div style="max-width:1320px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:#7a7a82;">Lupa Notícias · Modelo de portal de notícias</div>
+    <div style="font-family:'Archivo',sans-serif;font-weight:800;font-size:38px;letter-spacing:-.02em;color:#0b0b0c;margin-top:10px;">Identidade & sistema do portal</div>
+    <div style="font-family:'Newsreader',Georgia,serif;font-size:18px;color:#52525b;margin-top:8px;max-width:720px;">Portal com vídeo em primeiro plano e o Lupa Play no centro: capa video-first, matéria, categoria, Estúdio de upload e a versão mobile — em paleta monocromática. Pacote pronto para desenvolvimento no Claude Code.</div>
+  </div>
+
+  <!-- ===================== LOGO STUDY ===================== -->
+  <section id="logo" style="background:#fff;border-radius:18px;box-shadow:0 24px 60px -30px rgba(10,10,15,.4);padding:44px 46px;max-width:1320px;">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:34px;">
+      <span style="background:#0b0b0c;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;padding:4px 10px;border-radius:6px;">Logo</span>
+      <span style="font-family:'Archivo',sans-serif;font-weight:800;font-size:22px;color:#0b0b0c;">A marca, modernizada</span>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #e6e6e9;border-radius:14px;overflow:hidden;margin-bottom:34px;">
+      <div style="padding:34px;border-right:1px solid #e6e6e9;background:#fafafa;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;color:#9a9aa0;text-transform:uppercase;margin-bottom:22px;">Antes</div>
+        <img src="uploads/logo-original.png" alt="Logo original" style="width:100%;max-width:360px;display:block;filter:grayscale(1);"/>
+      </div>
+      <div style="padding:34px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;color:#0b0b0c;text-transform:uppercase;margin-bottom:22px;">Depois</div>
+        <div style="display:flex;align-items:center;gap:16px;color:#0b0b0c;">
+          <svg width="60" height="60" viewBox="0 0 48 48" fill="none" aria-label="Lupa">
+            <path d="M32 11 A15 15 0 1 0 32 33" stroke="currentColor" stroke-width="4.6" stroke-linecap="round"></path>
+            <path d="M18 14.5 L18 29.5 L31 22 Z" fill="currentColor"></path>
+          </svg>
+          <div style="display:flex;align-items:baseline;gap:0.18em;line-height:.9;">
+            <span style="font-family:'Archivo',sans-serif;font-weight:800;font-size:40px;letter-spacing:-.015em;">LUPA</span>
+            <span style="font-family:'Archivo',sans-serif;font-weight:500;font-size:40px;letter-spacing:.02em;color:#3a3a3d;">NOTÍCIAS</span>
+          </div>
+        </div>
+        <div style="font-family:'Newsreader',Georgia,serif;font-size:15px;color:#6b6b70;margin-top:18px;max-width:420px;">Abertura “C” geométrica e limpa, fiel ao símbolo original. O “play” dentro da lente conecta a leitura à cobertura em vídeo, podcast e ao vivo.</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
+      <div style="border:1px solid #e6e6e9;border-radius:12px;padding:30px;display:flex;flex-direction:column;align-items:center;gap:18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.16em;color:#9a9aa0;text-transform:uppercase;align-self:flex-start;">Opção 1 · Lupa + play (alternativa)</div>
+        <svg width="86" height="86" viewBox="0 0 48 48" fill="none" style="color:#0b0b0c;">
+          <circle cx="20" cy="20" r="14" stroke="currentColor" stroke-width="4.4"></circle>
+          <path d="M16.6 13.4 L16.6 26.6 L28 20 Z" fill="currentColor"></path>
+          <line x1="30.4" y1="30.4" x2="42" y2="42" stroke="currentColor" stroke-width="5.4" stroke-linecap="round"></line>
+        </svg>
+      </div>
+      <div style="border:1px solid #e6e6e9;border-radius:12px;padding:30px;display:flex;flex-direction:column;align-items:center;gap:18px;">
+        <div style="display:flex;align-items:center;gap:8px;align-self:flex-start;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.16em;color:#0b0b0c;text-transform:uppercase;">Opção 2 · Abertura “C”</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;background:#0b0b0c;color:#fff;padding:2px 7px;border-radius:4px;">✓ ESCOLHIDO</span></div>
+        <svg width="86" height="86" viewBox="0 0 48 48" fill="none" style="color:#0b0b0c;">
+          <path d="M32 11 A15 15 0 1 0 32 33" stroke="currentColor" stroke-width="4.6" stroke-linecap="round"></path>
+          <path d="M18 14.5 L18 29.5 L31 22 Z" fill="currentColor"></path>
+        </svg>
+      </div>
+      <div style="border:1px solid #0b0b0c;border-radius:12px;padding:30px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:#0b0b0c;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.16em;color:#8a8a90;text-transform:uppercase;align-self:flex-start;">Fundo escuro</div>
+        <div style="display:flex;align-items:center;gap:11px;color:#fff;">
+          <svg width="40" height="40" viewBox="0 0 48 48" fill="none" aria-label="Lupa">
+            <path d="M32 11 A15 15 0 1 0 32 33" stroke="currentColor" stroke-width="4.6" stroke-linecap="round"></path>
+            <path d="M18 14.5 L18 29.5 L31 22 Z" fill="currentColor"></path>
+          </svg>
+          <div style="display:flex;align-items:baseline;gap:0.18em;line-height:.9;">
+            <span style="font-family:'Archivo',sans-serif;font-weight:800;font-size:22px;">LUPA</span>
+            <span style="font-family:'Archivo',sans-serif;font-weight:500;font-size:22px;color:#b8b8bd;">NOTÍCIAS</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:26px;align-items:center;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;color:#9a9aa0;text-transform:uppercase;margin-right:6px;">Paleta</span>
+      <span style="width:40px;height:40px;border-radius:8px;background:#0b0b0c;border:1px solid #e6e6e9;"></span>
+      <span style="width:40px;height:40px;border-radius:8px;background:#3a3a3d;"></span>
+      <span style="width:40px;height:40px;border-radius:8px;background:#8a8a90;"></span>
+      <span style="width:40px;height:40px;border-radius:8px;background:#cfcfd4;"></span>
+      <span style="width:40px;height:40px;border-radius:8px;background:#f2f0ea;"></span>
+      <span style="width:40px;height:40px;border-radius:8px;background:#ffffff;border:1px solid #e6e6e9;"></span>
+      <span style="margin-left:20px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;color:#9a9aa0;text-transform:uppercase;margin-right:6px;">Tipos</span>
+      <span style="font-family:'Archivo',sans-serif;font-weight:800;font-size:19px;color:#0b0b0c;">Archivo</span>
+      <span style="font-family:'Newsreader',serif;font-size:19px;color:#0b0b0c;">Newsreader</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#0b0b0c;">IBM Plex Mono</span>
+    </div>
+  </section>
+
+  <!-- ===================== CAPAS (OPTIONS) ===================== -->
+  <section style="max-width:2680px;">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:26px;">
+      <span style="font-family:'Archivo',sans-serif;font-weight:800;font-size:22px;color:#0b0b0c;">Capa do portal — vídeo em primeiro plano</span>
+    </div>
+    <div style="display:flex;gap:56px;flex-wrap:wrap;align-items:flex-start;">
+
+      <!-- OPTION 1a : HOME DENSA -->
+      <div id="1a">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <span style="background:#0b0b0c;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;padding:4px 10px;border-radius:6px;">1a</span>
+          <span style="font-family:'Archivo',sans-serif;font-weight:700;font-size:16px;color:#0b0b0c;">Direção A — Portal denso</span>
+          <span style="font-family:'Newsreader',serif;font-size:14px;color:#6b6b70;">grade editorial, muita informação (estilo G1/UOL)</span>
+        </div>
+
+        <div style="width:1280px;border-radius:14px;overflow:hidden;box-shadow:0 40px 90px -30px rgba(10,10,15,.45);background:#fff;">
+          <div style="background:#e6e6ea;display:flex;align-items:center;gap:9px;padding:11px 16px;border-bottom:1px solid #d5d5da;">
+            <span style="width:11px;height:11px;border-radius:50%;background:#c9c9ce;"></span>
+            <span style="width:11px;height:11px;border-radius:50%;background:#c9c9ce;"></span>
+            <span style="width:11px;height:11px;border-radius:50%;background:#c9c9ce;"></span>
+            <div style="flex:1;margin-left:12px;background:#fff;border-radius:7px;padding:6px 14px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a8a90;">🔒 lupanoticias.com.br</div>
+          </div>
+
+          <dc-import name="LupaHeaderA" hint-size="1280px,170px"></dc-import>
+
+          <div style="padding:28px 28px 34px;">
+            <div style="display:grid;grid-template-columns:1fr 340px;gap:34px;align-items:start;">
+              <div>
+                <div style="position:relative;border-radius:8px;overflow:hidden;">
+                  <image-slot id="a-lead" style="width:100%;height:452px;" shape="rect" placeholder="Vídeo em destaque (16:9)"></image-slot>
+                  <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,9,7,.28) 0%,rgba(10,9,7,0) 26%,rgba(10,9,7,0) 48%,rgba(10,9,7,.92) 100%);"></div>
+                  <span style="position:absolute;top:16px;left:16px;"><span style="display:inline-flex;align-items:center;gap:6px;background:#0b0b0c;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.06em;padding:5px 9px;border-radius:999px;"><span style="width:6px;height:6px;border-radius:50%;background:#fff;animation:lupaPulse 1.4s infinite;"></span>AO VIVO</span></span>
+                  <span style="position:absolute;top:16px;right:16px;background:rgba(11,11,12,.82);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:11px;padding:4px 9px;border-radius:5px;">18:24</span>
+                  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><span style="width:78px;height:78px;border-radius:50%;background:rgba(11,11,12,.5);display:flex;align-items:center;justify-content:center;border:1.5px solid rgba(255,255,255,.7);"><svg width="26" height="26" viewBox="0 0 24 24"><path d="M8 5 L8 19 L19 12 Z" fill="#fff"></path></svg></span></div>
+                  <div style="position:absolute;left:0;right:0;bottom:0;padding:24px 26px;color:#fff;">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;">Vídeo · Política · Ao vivo</span>
+                    <h1 style="font-family:'Archivo',sans-serif;font-weight:800;font-size:38px;line-height:1.05;letter-spacing:-.02em;margin:8px 0 0;text-wrap:balance;">Cobertura ao vivo: a votação do novo marco de infraestrutura</h1>
+                  </div>
+                </div>
+                <p style="font-family:'Newsreader',Georgia,serif;font-size:19px;line-height:1.5;color:#52525b;margin:16px 0 0;">Acompanhe minuto a minuto do plenário, com análise em tempo real e os bastidores da negociação que deve destravar 900 mil empregos.</p>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a8a90;margin-top:12px;">Transmissão Lupa Play · 12,4 mil assistindo agora</div>
+
+                <div style="height:1px;background:#e6e6e9;margin:24px 0;"></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:26px;">
+                  <div>
+                    <div style="position:relative;border-radius:6px;overflow:hidden;"><image-slot id="a-sub1" style="width:100%;height:150px;" shape="rect" placeholder=""></image-slot><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><span style="width:42px;height:42px;border-radius:50%;background:rgba(11,11,12,.5);display:flex;align-items:center;justify-content:center;border:1.5px solid rgba(255,255,255,.7);"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M8 5 L8 19 L19 12 Z" fill="#fff"></path></svg></span></div><span style="position:absolute;bottom:8px;right:8px;background:rgba(11,11,12,.85);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 6px;border-radius:4px;">05:12</span></div>
+                    <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#0b0b0c;margin-top:12px;">Vídeo · Economia</div>
+                    <h3 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:19px;line-height:1.15;color:#0b0b0c;margin:6px 0 0;">Juros: o que esperar do segundo semestre, em 5 minutos</h3>
+                  </div>
+                  <div>
+                    <div style="position:relative;border-radius:6px;overflow:hidden;"><image-slot id="a-sub2" style="width:100%;height:150px;" shape="rect" placeholder=""></image-slot><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><span style="width:42px;height:42px;border-radius:50%;background:rgba(11,11,12,.5);display:flex;align-items:center;justify-content:center;border:1.5px solid rgba(255,255,255,.7);"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M8 5 L8 19 L19 12 Z" fill="#fff"></path></svg></span></div><span style="position:absolute;bottom:8px;right:8px;background:rgba(11,11,12,.85);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 6px;border-radius:4px;">03:48</span></div>
+                    <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#0b0b0c;margin-top:12px;">Vídeo · Cidades</div>
+                    <h3 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:19px;line-height:1.15;color:#0b0b0c;margin:6px 0 0;">Chuvas no Sul: o mapa das 12 cidades em alerta</h3>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display:flex;flex-direction:column;">
+                <div style="font-family:'Archivo',sans-serif;font-weight:800;font-size:16px;color:#0b0b0c;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><svg width="18" height="18" viewBox="0 0 48 48" fill="none" style="color:#0b0b0c;"><path d="M32 11 A15 15 0 1 0 32 33" stroke="#0b0b0c" stroke-width="4.6" stroke-linecap="round"></path><path d="M18 14.5 L18 29.5 L31 22 Z" fill="#0b0b0c"></path></svg>A seguir no Lupa Play</div>
+                <div style="display:flex;flex-direction:column;gap:16px;">
+                  <div style="display:flex;gap:12px;align-items:flex-start;">
+                    <div style="position:relative;flex:none;"><image-slot id="up-1" style="width:118px;height:70px;" shape="rounded" radius="4" placeholder=""></image-slot><span style="position:absolute;bottom:5px;right:5px;background:rgba(11,11,12,.85);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:9px;padding:2px 5px;border-radius:3px;">12:40</span></div>
+                    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#8a8a90;">Vídeo · Política</div><h4 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:15px;line-height:1.2;color:#0b0b0c;margin:4px 0 0;">O que muda, na prática, com o novo marco</h4></div>
+                  </div>
+                  <div style="display:flex;gap:12px;align-items:flex-start;">
+                    <div style="position:relative;flex:none;"><image-slot id="up-2" style="width:118px;height:70px;" shape="rounded" radius="4" placeholder=""></image-slot><span style="position:absolute;bottom:5px;right:5px;background:rgba(11,11,12,.85);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:9px;padding:2px 5px;border-radius:3px;">38:12</span></div>
+                    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#8a8a90;">Podcast · Economia</div><h4 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:15px;line-height:1.2;color:#0b0b0c;margin:4px 0 0;">Café com Mercado: juros e o 2º semestre</h4></div>
+                  </div>
+                  <div style="display:flex;gap:12px;align-items:flex-start;">
+                    <div style="position:relative;flex:none;"><image-slot id="up-3" style="width:118px;height:70px;" shape="rounded" radius="4" placeholder=""></image-slot><span style="position:absolute;bottom:5px;right:5px;background:rgba(11,11,12,.85);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:9px;padding:2px 5px;border-radius:3px;">08:05</span></div>
+                    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#8a8a90;">Vídeo · Esportes</div><h4 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:15px;line-height:1.2;color:#0b0b0c;margin:4px 0 0;">Bastidores da estreia da seleção</h4></div>
+                  </div>
+                  <div style="display:flex;gap:12px;align-items:flex-start;">
+                    <div style="position:relative;flex:none;"><image-slot id="up-4" style="width:118px;height:70px;" shape="rounded" radius="4" placeholder=""></image-slot><span style="position:absolute;bottom:5px;right:5px;background:rgba(11,11,12,.85);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:9px;padding:2px 5px;border-radius:3px;">44:30</span></div>
+                    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#8a8a90;">Podcast · Tecnologia</div><h4 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:15px;line-height:1.2;color:#0b0b0c;margin:4px 0 0;">Lupa Tech: a corrida do sol</h4></div>
+                  </div>
+                </div>
+                <div style="background:#0b0b0c;border-radius:10px;padding:18px;margin-top:20px;color:#fff;">
+                  <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.08em;"><span style="width:7px;height:7px;border-radius:50%;background:#fff;animation:lupaPulse 1.4s infinite;"></span>AO VIVO</span>
+                  <div style="font-family:'Archivo',sans-serif;font-weight:700;font-size:16px;line-height:1.2;margin-top:10px;">Lupa News 24h — jornalismo ao vivo, o dia todo</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8a8a90;margin-top:8px;">3,1 mil assistindo agora</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="height:1px;background:#0b0b0c;margin:34px 0 22px;"></div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:26px;">
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#0b0b0c;border-bottom:2px solid #0b0b0c;padding-bottom:8px;margin-bottom:14px;">Economia</div>
+                <image-slot id="a-ec" style="width:100%;height:120px;" shape="rounded" radius="4" placeholder="Imagem"></image-slot>
+                <h4 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:16px;line-height:1.2;color:#0b0b0c;margin:11px 0 12px;">Câmbio recua e bolsa fecha em alta puxada por commodities</h4>
+                <div style="display:flex;flex-direction:column;gap:9px;font-size:13.5px;color:#3a3a3d;font-weight:600;">
+                  <span>Inflação desacelera e vem abaixo do esperado</span>
+                  <span>Nova lei de dados muda regras para PMEs</span>
+                </div>
+              </div>
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#0b0b0c;border-bottom:2px solid #0b0b0c;padding-bottom:8px;margin-bottom:14px;">Mundo</div>
+                <image-slot id="a-mu" style="width:100%;height:120px;" shape="rounded" radius="4" placeholder="Imagem"></image-slot>
+                <h4 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:16px;line-height:1.2;color:#0b0b0c;margin:11px 0 12px;">Eleições na Europa redesenham mapa político do continente</h4>
+                <div style="display:flex;flex-direction:column;gap:9px;font-size:13.5px;color:#3a3a3d;font-weight:600;">
+                  <span>Negociações de paz avançam após rodada tensa</span>
+                  <span>Economia global cresce menos que o previsto</span>
+                </div>
+              </div>
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#0b0b0c;border-bottom:2px solid #0b0b0c;padding-bottom:8px;margin-bottom:14px;">Esportes</div>
+                <image-slot id="a-es" style="width:100%;height:120px;" shape="rounded" radius="4" placeholder="Imagem"></image-slot>
+                <h4 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:16px;line-height:1.2;color:#0b0b0c;margin:11px 0 12px;">Clubes definem calendário e temporada terá formato inédito</h4>
+                <div style="display:flex;flex-direction:column;gap:9px;font-size:13.5px;color:#3a3a3d;font-weight:600;">
+                  <span>Atleta bate recorde nacional dos 200m</span>
+                  <span>Mercado da bola: as negociações da semana</span>
+                </div>
+              </div>
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#0b0b0c;border-bottom:2px solid #0b0b0c;padding-bottom:8px;margin-bottom:14px;">Cultura</div>
+                <image-slot id="a-cu" style="width:100%;height:120px;" shape="rounded" radius="4" placeholder="Imagem"></image-slot>
+                <h4 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:16px;line-height:1.2;color:#0b0b0c;margin:11px 0 12px;">Descoberta em caverna de Minas revela pinturas de 11 mil anos</h4>
+                <div style="display:flex;flex-direction:column;gap:9px;font-size:13.5px;color:#3a3a3d;font-weight:600;">
+                  <span>Streaming nacional cresce 28% em um ano</span>
+                  <span>Festival de cinema anuncia seleção oficial</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:300px 1fr;gap:40px;margin-top:34px;padding-top:30px;border-top:1px solid #e6e6e9;">
+              <div>
+                <div style="font-family:'Archivo',sans-serif;font-weight:800;font-size:18px;color:#0b0b0c;margin-bottom:16px;">Mais lidas</div>
+                <div style="display:flex;flex-direction:column;gap:15px;">
+                  <div style="display:flex;gap:12px;align-items:baseline;"><span style="font-family:'Archivo',sans-serif;font-weight:800;font-size:22px;color:#cfcfd4;">1</span><span style="font-family:'Archivo',sans-serif;font-weight:600;font-size:14.5px;line-height:1.25;color:#0b0b0c;">Dólar cai e bolsa renova máxima do ano</span></div>
+                  <div style="display:flex;gap:12px;align-items:baseline;"><span style="font-family:'Archivo',sans-serif;font-weight:800;font-size:22px;color:#cfcfd4;">2</span><span style="font-family:'Archivo',sans-serif;font-weight:600;font-size:14.5px;line-height:1.25;color:#0b0b0c;">Entenda o que muda com o novo marco</span></div>
+                  <div style="display:flex;gap:12px;align-items:baseline;"><span style="font-family:'Archivo',sans-serif;font-weight:800;font-size:22px;color:#cfcfd4;">3</span><span style="font-family:'Archivo',sans-serif;font-weight:600;font-size:14.5px;line-height:1.25;color:#0b0b0c;">Seleção: as notas dos jogadores na estreia</span></div>
+                  <div style="display:flex;gap:12px;align-items:baseline;"><span style="font-family:'Archivo',sans-serif;font-weight:800;font-size:22px;color:#cfcfd4;">4</span><span style="font-family:'Archivo',sans-serif;font-weight:600;font-size:14.5px;line-height:1.25;color:#0b0b0c;">Previsão do tempo: frente fria chega ao Sudeste</span></div>
+                  <div style="display:flex;gap:12px;align-items:baseline;"><span style="font-family:'Archivo',sans-serif;font-weight:800;font-size:22px;color:#cfcfd4;">5</span><span style="font-family:'Archivo',sans-serif;font-weight:600;font-size:14.5px;line-height:1.25;color:#0b0b0c;">Streaming nacional bate recorde de assinantes</span></div>
+                </div>
+              </div>
+              <div>
+                <div style="font-family:'Archivo',sans-serif;font-weight:800;font-size:18px;color:#0b0b0c;margin-bottom:16px;">Opinião</div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:22px;">
+                  <div style="display:flex;flex-direction:column;gap:11px;">
+                    <div style="display:flex;align-items:center;gap:10px;"><image-slot id="a-op1" style="width:42px;height:42px;flex:none;" shape="circle" placeholder=""></image-slot><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#0b0b0c;">Beatriz Nogueira</span></div>
+                    <p style="font-family:'Newsreader',serif;font-style:italic;font-size:16px;line-height:1.4;color:#0b0b0c;margin:0;">“O marco é ambicioso — falta dizer quem paga a conta.”</p>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:11px;">
+                    <div style="display:flex;align-items:center;gap:10px;"><image-slot id="a-op2" style="width:42px;height:42px;flex:none;" shape="circle" placeholder=""></image-slot><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#0b0b0c;">Diego Sampaio</span></div>
+                    <p style="font-family:'Newsreader',serif;font-style:italic;font-size:16px;line-height:1.4;color:#0b0b0c;margin:0;">“A queda dos juros vem, mas não no ritmo que o mercado sonha.”</p>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:11px;">
+                    <div style="display:flex;align-items:center;gap:10px;"><image-slot id="a-op3" style="width:42px;height:42px;flex:none;" shape="circle" placeholder=""></image-slot><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#0b0b0c;">Marina Alvarenga</span></div>
+                    <p style="font-family:'Newsreader',serif;font-style:italic;font-size:16px;line-height:1.4;color:#0b0b0c;margin:0;">“O Sul pede prevenção, não apenas resposta ao desastre.”</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:#0b0b0c;padding:30px 28px;color:#fff;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <svg width="32" height="32" viewBox="0 0 48 48" fill="none" style="color:#fff;"><path d="M32 11 A15 15 0 1 0 32 33" stroke="currentColor" stroke-width="4.6" stroke-linecap="round"></path><path d="M18 14.5 L18 29.5 L31 22 Z" fill="currentColor"></path></svg>
+                <div>
+                  <div style="font-family:'Archivo',sans-serif;font-weight:800;font-size:22px;">Lupa Play</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8a8a90;letter-spacing:.08em;">VÍDEOS · PODCASTS · AO VIVO</div>
+                </div>
+              </div>
+              <span style="font-family:'Archivo',sans-serif;font-weight:700;font-size:13px;color:#0b0b0c;background:#fff;padding:9px 16px;border-radius:8px;cursor:pointer;">Ver tudo</span>
+            </div>
+            <div style="display:flex;gap:10px;margin-bottom:20px;"><span style="font-family:'Archivo',sans-serif;font-weight:700;font-size:13px;background:#fff;color:#0b0b0c;padding:8px 16px;border-radius:999px;cursor:pointer;">Vídeos</span><span style="font-family:'Archivo',sans-serif;font-weight:600;font-size:13px;color:#cfcfd4;border:1px solid rgba(255,255,255,.22);padding:8px 16px;border-radius:999px;cursor:pointer;">Podcasts</span><span style="font-family:'Archivo',sans-serif;font-weight:600;font-size:13px;color:#cfcfd4;border:1px solid rgba(255,255,255,.22);padding:8px 16px;border-radius:999px;cursor:pointer;">Ao Vivo</span><span style="font-family:'Archivo',sans-serif;font-weight:600;font-size:13px;color:#cfcfd4;border:1px solid rgba(255,255,255,.22);padding:8px 16px;border-radius:999px;cursor:pointer;">Cortes</span></div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;">
+              <div>
+                <div style="position:relative;">
+                  <image-slot id="play-1" style="width:100%;height:150px;" shape="rounded" radius="6" placeholder=""></image-slot>
+                  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><span style="width:46px;height:46px;border-radius:50%;background:rgba(11,11,12,.55);display:flex;align-items:center;justify-content:center;border:1.5px solid rgba(255,255,255,.55);"><svg width="15" height="15" viewBox="0 0 24 24"><path d="M8 5 L8 19 L19 12 Z" fill="#fff"></path></svg></span></div>
+                  <span style="position:absolute;bottom:8px;right:8px;background:rgba(11,11,12,.85);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10.5px;padding:3px 7px;border-radius:4px;">12:40</span>
+                </div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;color:#8a8a90;margin:12px 0 6px;">VÍDEO · POLÍTICA</div>
+                <h4 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:15.5px;line-height:1.2;color:#fff;margin:0;">O que muda, na prática, com o novo marco de infraestrutura</h4>
+              </div>
+              <div>
+                <div style="position:relative;">
+                  <image-slot id="play-2" style="width:100%;height:150px;" shape="rounded" radius="6" placeholder=""></image-slot>
+                  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><span style="width:46px;height:46px;border-radius:50%;background:rgba(11,11,12,.55);display:flex;align-items:center;justify-content:center;border:1.5px solid rgba(255,255,255,.55);"><svg width="15" height="15" viewBox="0 0 24 24"><path d="M8 5 L8 19 L19 12 Z" fill="#fff"></path></svg></span></div>
+                  <span style="position:absolute;bottom:8px;right:8px;background:rgba(11,11,12,.85);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10.5px;padding:3px 7px;border-radius:4px;">38:12</span>
+                </div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;color:#8a8a90;margin:12px 0 6px;">PODCAST · ECONOMIA</div>
+                <h4 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:15.5px;line-height:1.2;color:#fff;margin:0;">Café com Mercado: juros, câmbio e o segundo semestre</h4>
+              </div>
+              <div>
+                <div style="position:relative;">
+                  <image-slot id="play-3" style="width:100%;height:150px;" shape="rounded" radius="6" placeholder=""></image-slot>
+                  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><span style="width:46px;height:46px;border-radius:50%;background:rgba(11,11,12,.55);display:flex;align-items:center;justify-content:center;border:1.5px solid rgba(255,255,255,.55);"><svg width="15" height="15" viewBox="0 0 24 24"><path d="M8 5 L8 19 L19 12 Z" fill="#fff"></path></svg></span></div>
+                  <span style="position:absolute;bottom:8px;right:8px;background:rgba(11,11,12,.85);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10.5px;padding:3px 7px;border-radius:4px;">08:05</span>
+                </div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;color:#8a8a90;margin:12px 0 6px;">VÍDEO · ESPORTES</div>
+                <h4 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:15.5px;line-height:1.2;color:#fff;margin:0;">Bastidores da estreia da seleção nas eliminatórias</h4>
+              </div>
+              <div>
+                <div style="position:relative;">
+                  <image-slot id="play-4" style="width:100%;height:150px;" shape="rounded" radius="6" placeholder=""></image-slot>
+                  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><span style="width:46px;height:46px;border-radius:50%;background:rgba(11,11,12,.55);display:flex;align-items:center;justify-content:center;border:1.5px solid rgba(255,255,255,.55);"><svg width="15" height="15" viewBox="0 0 24 24"><path d="M8 5 L8 19 L19 12 Z" fill="#fff"></path></svg></span></div>
+                  <span style="position:absolute;bottom:8px;right:8px;background:rgba(11,11,12,.85);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10.5px;padding:3px 7px;border-radius:4px;">44:30</span>
+                </div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;color:#8a8a90;margin:12px 0 6px;">PODCAST · TECNOLOGIA</div>
+                <h4 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:15.5px;line-height:1.2;color:#fff;margin:0;">Lupa Tech: a corrida do Brasil pela energia do sol</h4>
+              </div>
+            </div>
+          </div>
+
+          <dc-import name="LupaFooter" hint-size="1280px,420px"></dc-import>
+        </div>
+      </div>
+
+
+    </div>
+  </section>
+
+  <!-- ===================== ARTICLE / MATÉRIA ===================== -->
+  <section id="1b" style="max-width:1320px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <span style="background:#0b0b0c;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;padding:4px 10px;border-radius:6px;">1b</span>
+      <span style="font-family:'Archivo',sans-serif;font-weight:700;font-size:16px;color:#0b0b0c;">Página de matéria</span>
+      <span style="font-family:'Newsreader',serif;font-size:14px;color:#6b6b70;">leitura confortável, hierarquia clara</span>
+    </div>
+
+    <div style="width:1280px;border-radius:14px;overflow:hidden;box-shadow:0 40px 90px -30px rgba(10,10,15,.45);background:#fff;">
+      <div style="background:#e6e6ea;display:flex;align-items:center;gap:9px;padding:11px 16px;border-bottom:1px solid #d5d5da;">
+        <span style="width:11px;height:11px;border-radius:50%;background:#c9c9ce;"></span>
+        <span style="width:11px;height:11px;border-radius:50%;background:#c9c9ce;"></span>
+        <span style="width:11px;height:11px;border-radius:50%;background:#c9c9ce;"></span>
+        <div style="flex:1;margin-left:12px;background:#fff;border-radius:7px;padding:6px 14px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a8a90;">🔒 lupanoticias.com.br/tecnologia/energia-solar-startup</div>
+      </div>
+
+      <dc-import name="LupaHeaderA" hint-size="1280px,170px"></dc-import>
+
+      <div style="padding:34px 0 0;">
+        <div style="max-width:1080px;margin:0 auto;padding:0 40px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a8a90;margin-bottom:22px;">Início <span style="color:#cfcfd4;">/</span> Tecnologia <span style="color:#cfcfd4;">/</span> Energia</div>
+          <div style="max-width:720px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:#0b0b0c;">Tecnologia</div>
+            <h1 style="font-family:'Archivo',sans-serif;font-weight:800;font-size:46px;line-height:1.06;letter-spacing:-.02em;color:#0b0b0c;margin:12px 0 0;text-wrap:balance;">Startup brasileira de energia solar capta US$ 90 milhões e mira expansão pela América Latina</h1>
+            <p style="font-family:'Newsreader',Georgia,serif;font-size:22px;line-height:1.45;color:#52525b;margin:18px 0 0;">Aporte liderado por fundo internacional será usado para triplicar a capacidade de produção e levar geração distribuída a pequenas cidades do interior.</p>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin:24px 0;padding:18px 0;border-top:1px solid #e6e6e9;border-bottom:1px solid #e6e6e9;flex-wrap:wrap;">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <image-slot id="art-author" style="width:46px;height:46px;flex:none;" shape="circle" placeholder=""></image-slot>
+                <div>
+                  <div style="font-family:'Archivo',sans-serif;font-weight:700;font-size:14.5px;color:#0b0b0c;">por Marina Alvarenga</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8a8a90;">1 de julho de 2026 · 08h20 · Atualizado há 20 min</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px;color:#0b0b0c;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8a8a90;">Compartilhar</span>
+                <span style="width:34px;height:34px;border:1px solid #e6e6e9;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;cursor:pointer;">f</span>
+                <span style="width:34px;height:34px;border:1px solid #e6e6e9;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;cursor:pointer;">X</span>
+                <span style="width:34px;height:34px;border:1px solid #e6e6e9;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M6 4v16l6-4 6 4V4z" stroke="#0b0b0c" stroke-width="2" stroke-linejoin="round"></path></svg></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="max-width:1000px;margin:0 auto;padding:0 40px;">
+          <image-slot id="art-hero" style="width:100%;height:520px;" shape="rounded" radius="6" placeholder="Imagem principal da matéria (16:9)"></image-slot>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#9a9aa0;margin-top:10px;">Painéis solares em usina no interior de São Paulo — Foto: Divulgação/Arquivo</div>
+        </div>
+
+        <div style="max-width:720px;margin:0 auto;padding:36px 40px 44px;font-family:'Newsreader',Georgia,serif;color:#1c1c20;">
+          <p style="font-size:19px;line-height:1.75;margin:0 0 22px;"><span style="font-weight:600;">Uma das principais startups de energia solar do país</span> anunciou nesta terça-feira a captação de US$ 90 milhões em uma nova rodada de investimento, liderada por um fundo internacional com foco em transição energética. O valor será usado para triplicar a capacidade de produção nos próximos dois anos.</p>
+          <p style="font-size:19px;line-height:1.75;margin:0 0 22px;">Segundo a empresa, a expansão prioriza a geração distribuída — modelo em que consumidores produzem a própria energia — em cidades de pequeno e médio porte, onde o acesso a alternativas ainda é limitado. A meta é chegar a 200 municípios até 2028.</p>
+
+          <blockquote style="margin:32px 0;padding:6px 0 6px 26px;border-left:3px solid #0b0b0c;">
+            <p style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:27px;line-height:1.3;color:#0b0b0c;margin:0;">“Queremos que a energia limpa deixe de ser privilégio das grandes cidades. O interior é a próxima fronteira.”</p>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a8a90;margin-top:14px;">— Fundadora da startup, em entrevista à Lupa</div>
+          </blockquote>
+
+          <h2 style="font-family:'Archivo',sans-serif;font-weight:800;font-size:26px;letter-spacing:-.01em;color:#0b0b0c;margin:8px 0 14px;">O gargalo da rede elétrica</h2>
+          <p style="font-size:19px;line-height:1.75;margin:0 0 22px;">Especialistas ouvidos pela reportagem alertam, no entanto, que a expansão acelerada da geração distribuída pressiona uma infraestrutura de transmissão que não acompanha o mesmo ritmo. O desafio, dizem, será coordenar investimento privado e planejamento público.</p>
+
+          <image-slot id="art-inline" style="width:100%;height:300px;margin:6px 0 10px;" shape="rounded" radius="6" placeholder="Imagem complementar / gráfico"></image-slot>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#9a9aa0;margin-bottom:26px;">Capacidade instalada de geração distribuída no Brasil (2019–2026)</div>
+
+          <p style="font-size:19px;line-height:1.75;margin:0 0 22px;">Mesmo com os obstáculos, o setor vive um momento de otimismo. O custo dos painéis caiu de forma consistente na última década, e novas linhas de crédito têm facilitado a adesão de pequenos negócios e famílias.</p>
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin:30px 0;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#3a3a3d;border:1px solid #e6e6e9;border-radius:999px;padding:6px 14px;">Energia</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#3a3a3d;border:1px solid #e6e6e9;border-radius:999px;padding:6px 14px;">Startups</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#3a3a3d;border:1px solid #e6e6e9;border-radius:999px;padding:6px 14px;">Sustentabilidade</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#3a3a3d;border:1px solid #e6e6e9;border-radius:999px;padding:6px 14px;">Investimento</span>
+          </div>
+
+          <div style="display:flex;gap:16px;align-items:flex-start;background:#f7f7f8;border-radius:12px;padding:22px;">
+            <image-slot id="art-authorbox" style="width:60px;height:60px;flex:none;" shape="circle" placeholder=""></image-slot>
+            <div>
+              <div style="font-family:'Archivo',sans-serif;font-weight:800;font-size:16px;color:#0b0b0c;">Marina Alvarenga</div>
+              <p style="font-family:'Newsreader',serif;font-size:15.5px;line-height:1.55;color:#52525b;margin:6px 0 0;">Repórter de Tecnologia e Economia da Lupa Notícias. Cobre inovação, energia e o impacto da tecnologia na vida das cidades.</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="max-width:1080px;margin:0 auto;padding:14px 40px 48px;">
+          <div style="font-family:'Archivo',sans-serif;font-weight:800;font-size:20px;color:#0b0b0c;border-top:1px solid #0b0b0c;padding-top:20px;margin-bottom:20px;">Leia também</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:26px;">
+            <div>
+              <image-slot id="art-rel1" style="width:100%;height:150px;" shape="rounded" radius="4" placeholder="Imagem"></image-slot>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#0b0b0c;margin:12px 0 6px;">Economia</div>
+              <h4 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:17px;line-height:1.2;color:#0b0b0c;margin:0;">Nova lei de dados entra em vigor e muda regras para pequenas empresas</h4>
+            </div>
+            <div>
+              <image-slot id="art-rel2" style="width:100%;height:150px;" shape="rounded" radius="4" placeholder="Imagem"></image-slot>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#0b0b0c;margin:12px 0 6px;">Mundo</div>
+              <h4 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:17px;line-height:1.2;color:#0b0b0c;margin:0;">Cúpula do clima fecha acordo para acelerar transição energética</h4>
+            </div>
+            <div>
+              <image-slot id="art-rel3" style="width:100%;height:150px;" shape="rounded" radius="4" placeholder="Imagem"></image-slot>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#0b0b0c;margin:12px 0 6px;">Tecnologia</div>
+              <h4 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:17px;line-height:1.2;color:#0b0b0c;margin:0;">Streaming nacional cresce 28% e pressiona catálogos internacionais</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <dc-import name="LupaFooter" hint-size="1280px,420px"></dc-import>
+    </div>
+  </section>
+
+
+  <!-- ===================== CATEGORY / CATEGORIA ===================== -->
+  <section id="1c" style="max-width:1320px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <span style="background:#0b0b0c;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;padding:4px 10px;border-radius:6px;">1c</span>
+      <span style="font-family:'Archivo',sans-serif;font-weight:700;font-size:16px;color:#0b0b0c;">Página de categoria</span>
+      <span style="font-family:'Newsreader',serif;font-size:14px;color:#6b6b70;">exemplo: Política</span>
+    </div>
+
+    <div style="width:1280px;border-radius:14px;overflow:hidden;box-shadow:0 40px 90px -30px rgba(10,10,15,.45);background:#fff;">
+      <div style="background:#e6e6ea;display:flex;align-items:center;gap:9px;padding:11px 16px;border-bottom:1px solid #d5d5da;">
+        <span style="width:11px;height:11px;border-radius:50%;background:#c9c9ce;"></span>
+        <span style="width:11px;height:11px;border-radius:50%;background:#c9c9ce;"></span>
+        <span style="width:11px;height:11px;border-radius:50%;background:#c9c9ce;"></span>
+        <div style="flex:1;margin-left:12px;background:#fff;border-radius:7px;padding:6px 14px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a8a90;">🔒 lupanoticias.com.br/politica</div>
+      </div>
+
+      <dc-import name="LupaHeaderA" hint-size="1280px,170px"></dc-import>
+
+      <div style="padding:36px 40px 44px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:20px;padding-bottom:24px;border-bottom:2px solid #0b0b0c;flex-wrap:wrap;">
+          <div style="max-width:640px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a8a90;">Início <span style="color:#cfcfd4;">/</span> Editorias</div>
+            <h1 style="font-family:'Archivo',sans-serif;font-weight:900;font-size:56px;letter-spacing:-.03em;color:#0b0b0c;margin:6px 0 0;">Política</h1>
+            <p style="font-family:'Newsreader',serif;font-size:18px;line-height:1.5;color:#52525b;margin:10px 0 0;">Congresso, governo, eleições e Justiça — a cobertura da Lupa sobre o poder e as decisões que afetam o país.</p>
+          </div>
+          <button style="background:#0b0b0c;color:#fff;border:none;font-family:'Archivo',sans-serif;font-weight:700;font-size:14px;padding:12px 22px;border-radius:8px;cursor:pointer;">＋ Seguir editoria</button>
+        </div>
+
+        <div style="display:flex;gap:8px;margin:22px 0 30px;flex-wrap:wrap;">
+          <span style="font-family:'Archivo',sans-serif;font-weight:700;font-size:13px;color:#fff;background:#0b0b0c;border-radius:999px;padding:8px 16px;cursor:pointer;">Tudo</span>
+          <span style="font-family:'Archivo',sans-serif;font-weight:600;font-size:13px;color:#3a3a3d;border:1px solid #e6e6e9;border-radius:999px;padding:8px 16px;cursor:pointer;">Congresso</span>
+          <span style="font-family:'Archivo',sans-serif;font-weight:600;font-size:13px;color:#3a3a3d;border:1px solid #e6e6e9;border-radius:999px;padding:8px 16px;cursor:pointer;">Governo</span>
+          <span style="font-family:'Archivo',sans-serif;font-weight:600;font-size:13px;color:#3a3a3d;border:1px solid #e6e6e9;border-radius:999px;padding:8px 16px;cursor:pointer;">Eleições</span>
+          <span style="font-family:'Archivo',sans-serif;font-weight:600;font-size:13px;color:#3a3a3d;border:1px solid #e6e6e9;border-radius:999px;padding:8px 16px;cursor:pointer;">Justiça</span>
+          <span style="font-family:'Archivo',sans-serif;font-weight:600;font-size:13px;color:#3a3a3d;border:1px solid #e6e6e9;border-radius:999px;padding:8px 16px;cursor:pointer;">Estados</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:34px;margin-bottom:38px;">
+          <div>
+            <image-slot id="cat-lead" style="width:100%;height:360px;" shape="rounded" radius="5" placeholder="Imagem do destaque"></image-slot>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#0b0b0c;margin:16px 0 8px;">Congresso · há 12 min</div>
+            <h2 style="font-family:'Archivo',sans-serif;font-weight:800;font-size:34px;line-height:1.08;letter-spacing:-.02em;color:#0b0b0c;margin:0;text-wrap:balance;">Congresso aprova novo marco de infraestrutura e prevê R$ 320 bi em obras até 2030</h2>
+            <p style="font-family:'Newsreader',serif;font-size:18px;line-height:1.5;color:#52525b;margin:12px 0 0;">Texto foi aprovado por ampla maioria e segue para sanção; governo estima geração de 900 mil empregos.</p>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:20px;">
+            <div style="display:flex;gap:14px;padding-bottom:20px;border-bottom:1px solid #e6e6e9;">
+              <div style="flex:1;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#0b0b0c;">Governo</div>
+                <h3 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:18px;line-height:1.2;color:#0b0b0c;margin:5px 0 0;">Ministério anuncia pacote de crédito para pequenos municípios</h3>
+              </div>
+              <image-slot id="cat-s1" style="width:96px;height:72px;flex:none;" shape="rounded" radius="3" placeholder=""></image-slot>
+            </div>
+            <div style="display:flex;gap:14px;padding-bottom:20px;border-bottom:1px solid #e6e6e9;">
+              <div style="flex:1;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#0b0b0c;">Eleições</div>
+                <h3 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:18px;line-height:1.2;color:#0b0b0c;margin:5px 0 0;">Tribunal define calendário e regras para o próximo pleito</h3>
+              </div>
+              <image-slot id="cat-s2" style="width:96px;height:72px;flex:none;" shape="rounded" radius="3" placeholder=""></image-slot>
+            </div>
+            <div style="display:flex;gap:14px;">
+              <div style="flex:1;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#0b0b0c;">Justiça</div>
+                <h3 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:18px;line-height:1.2;color:#0b0b0c;margin:5px 0 0;">Supremo retoma julgamento sobre autonomia de agências</h3>
+              </div>
+              <image-slot id="cat-s3" style="width:96px;height:72px;flex:none;" shape="rounded" radius="3" placeholder=""></image-slot>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;">
+          <div style="font-family:'Archivo',sans-serif;font-weight:800;font-size:18px;color:#0b0b0c;border-top:1px solid #0b0b0c;padding-top:18px;margin-bottom:6px;">Últimas em Política</div>
+          <div style="display:flex;gap:20px;padding:22px 0;border-bottom:1px solid #e6e6e9;align-items:center;">
+            <image-slot id="cat-l1" style="width:200px;height:120px;flex:none;" shape="rounded" radius="5" placeholder=""></image-slot>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#0b0b0c;">Congresso · há 40 min</div>
+              <h3 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:22px;line-height:1.15;color:#0b0b0c;margin:6px 0 8px;">Câmara pauta reforma administrativa para a próxima semana</h3>
+              <p style="font-family:'Newsreader',serif;font-size:16px;line-height:1.45;color:#52525b;margin:0;">Relator promete texto enxuto; oposição já articula obstrução no plenário.</p>
+            </div>
+          </div>
+          <div style="display:flex;gap:20px;padding:22px 0;border-bottom:1px solid #e6e6e9;align-items:center;">
+            <image-slot id="cat-l2" style="width:200px;height:120px;flex:none;" shape="rounded" radius="5" placeholder=""></image-slot>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#0b0b0c;">Governo · há 1 h</div>
+              <h3 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:22px;line-height:1.15;color:#0b0b0c;margin:6px 0 8px;">Governo detalha plano de saneamento para 500 cidades</h3>
+              <p style="font-family:'Newsreader',serif;font-size:16px;line-height:1.45;color:#52525b;margin:0;">Investimento será dividido entre União, estados e iniciativa privada até 2030.</p>
+            </div>
+          </div>
+          <div style="display:flex;gap:20px;padding:22px 0;border-bottom:1px solid #e6e6e9;align-items:center;">
+            <image-slot id="cat-l3" style="width:200px;height:120px;flex:none;" shape="rounded" radius="5" placeholder=""></image-slot>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#0b0b0c;">Eleições · há 2 h</div>
+              <h3 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:22px;line-height:1.15;color:#0b0b0c;margin:6px 0 8px;">Pesquisa mostra cenário embolado a três meses da votação</h3>
+              <p style="font-family:'Newsreader',serif;font-size:16px;line-height:1.45;color:#52525b;margin:0;">Margem de erro mantém quatro nomes tecnicamente empatados na liderança.</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:32px;">
+          <span style="font-family:'Archivo',sans-serif;font-weight:700;font-size:14px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#0b0b0c;color:#fff;">1</span>
+          <span style="font-family:'Archivo',sans-serif;font-weight:600;font-size:14px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid #e6e6e9;color:#3a3a3d;cursor:pointer;">2</span>
+          <span style="font-family:'Archivo',sans-serif;font-weight:600;font-size:14px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid #e6e6e9;color:#3a3a3d;cursor:pointer;">3</span>
+          <span style="font-family:'Archivo',sans-serif;font-weight:600;font-size:14px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid #e6e6e9;color:#3a3a3d;cursor:pointer;">→</span>
+        </div>
+      </div>
+
+      <dc-import name="LupaFooter" hint-size="1280px,420px"></dc-import>
+    </div>
+  </section>
+
+  <!-- ===================== STUDIO / UPLOAD ===================== -->
+  <section id="1d" style="max-width:1320px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <span style="background:#0b0b0c;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;padding:4px 10px;border-radius:6px;">1d</span>
+      <span style="font-family:'Archivo',sans-serif;font-weight:700;font-size:16px;color:#0b0b0c;">Estúdio — upload de vídeo &amp; podcast</span>
+      <span style="font-family:'Newsreader',serif;font-size:14px;color:#6b6b70;">área administrativa (CMS) para publicar mídia</span>
+    </div>
+
+    <div style="width:1280px;border-radius:14px;overflow:hidden;box-shadow:0 40px 90px -30px rgba(10,10,15,.45);background:#fff;">
+      <div style="background:#e6e6ea;display:flex;align-items:center;gap:9px;padding:11px 16px;border-bottom:1px solid #d5d5da;">
+        <span style="width:11px;height:11px;border-radius:50%;background:#c9c9ce;"></span>
+        <span style="width:11px;height:11px;border-radius:50%;background:#c9c9ce;"></span>
+        <span style="width:11px;height:11px;border-radius:50%;background:#c9c9ce;"></span>
+        <div style="flex:1;margin-left:12px;background:#fff;border-radius:7px;padding:6px 14px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a8a90;">🔒 studio.lupanoticias.com.br/publicar</div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 28px;border-bottom:1px solid #e6e6e9;background:#0b0b0c;color:#fff;">
+        <div style="display:flex;align-items:center;gap:26px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <svg width="30" height="30" viewBox="0 0 48 48" fill="none" style="color:#fff;"><path d="M32 11 A15 15 0 1 0 32 33" stroke="currentColor" stroke-width="4.6" stroke-linecap="round"></path><path d="M18 14.5 L18 29.5 L31 22 Z" fill="currentColor"></path></svg>
+            <div style="display:flex;align-items:baseline;gap:.16em;"><span style="font-family:'Archivo',sans-serif;font-weight:800;font-size:18px;">LUPA</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.14em;color:#8a8a90;">ESTÚDIO</span></div>
+          </div>
+          <div style="display:flex;gap:22px;font-family:'Archivo',sans-serif;font-size:13.5px;color:#9a9aa0;">
+            <span style="cursor:pointer;">Conteúdo</span>
+            <span style="color:#fff;font-weight:700;cursor:pointer;">Publicar</span>
+            <span style="cursor:pointer;">Mídia</span>
+            <span style="cursor:pointer;">Análises</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8a8a90;">Salvo há 2 min</span>
+          <image-slot id="st-avatar" style="width:32px;height:32px;flex:none;" shape="circle" placeholder=""></image-slot>
+        </div>
+      </div>
+
+      <div style="padding:32px 40px 40px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:26px;flex-wrap:wrap;gap:14px;">
+          <div>
+            <h1 style="font-family:'Archivo',sans-serif;font-weight:800;font-size:30px;letter-spacing:-.02em;color:#0b0b0c;margin:0;">Publicar nova mídia</h1>
+            <p style="font-family:'Newsreader',serif;font-size:16px;color:#6b6b70;margin:6px 0 0;">Envie um vídeo ou episódio de podcast para o Lupa Play.</p>
+          </div>
+          <div style="display:inline-flex;background:#f1f1f3;border-radius:10px;padding:4px;gap:4px;">
+            <span style="padding:10px 20px;border-radius:7px;background:#0b0b0c;color:#fff;font-weight:700;font-size:14px;font-family:'Archivo',sans-serif;display:flex;align-items:center;gap:8px;cursor:pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="14" height="14" rx="2" stroke="currentColor" stroke-width="2"></rect><path d="M16 10 L22 7 L22 17 L16 14 Z" fill="currentColor"></path></svg>Vídeo</span>
+            <span style="padding:10px 20px;border-radius:7px;color:#3a3a3d;font-weight:600;font-size:14px;font-family:'Archivo',sans-serif;display:flex;align-items:center;gap:8px;cursor:pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="11" rx="3" stroke="currentColor" stroke-width="2"></rect><path d="M6 11 a6 6 0 0 0 12 0 M12 17 v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>Podcast</span>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 336px;gap:32px;align-items:start;">
+          <div style="display:flex;flex-direction:column;gap:26px;">
+            <div style="border:2px dashed #cfcfd4;border-radius:14px;padding:46px 30px;text-align:center;background:#fafafa;">
+              <div style="width:56px;height:56px;border-radius:50%;background:#0b0b0c;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 16 V4 M7 9 L12 4 L17 9" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path><path d="M4 15 v3 a2 2 0 0 0 2 2 h12 a2 2 0 0 0 2 -2 v-3" stroke="#fff" stroke-width="2" stroke-linecap="round"></path></svg>
+              </div>
+              <div style="font-family:'Archivo',sans-serif;font-weight:700;font-size:19px;color:#0b0b0c;">Arraste o arquivo de vídeo ou áudio aqui</div>
+              <div style="font-family:'Newsreader',serif;font-size:15px;color:#6b6b70;margin:6px 0 18px;">ou selecione do seu computador</div>
+              <span style="display:inline-block;background:#0b0b0c;color:#fff;font-family:'Archivo',sans-serif;font-weight:700;font-size:14px;padding:11px 22px;border-radius:9px;cursor:pointer;">Selecionar arquivo</span>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#9a9aa0;margin-top:16px;letter-spacing:.04em;">MP4 · MOV · MP3 · WAV · até 4 GB</div>
+            </div>
+
+            <div style="border:1px solid #e6e6e9;border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:16px;">
+              <div style="width:44px;height:44px;border-radius:8px;background:#f1f1f3;display:flex;align-items:center;justify-content:center;flex:none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="14" height="14" rx="2" stroke="#0b0b0c" stroke-width="2"></rect><path d="M17 10 L22 7 L22 17 L17 14 Z" fill="#0b0b0c"></path></svg></div>
+              <div style="flex:1;">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
+                  <span style="font-family:'Archivo',sans-serif;font-weight:600;font-size:14px;color:#0b0b0c;">reportagem-marco-infraestrutura.mp4</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#0b0b0c;">72%</span>
+                </div>
+                <div style="height:6px;border-radius:999px;background:#ededf0;overflow:hidden;"><div style="width:72%;height:100%;background:#0b0b0c;"></div></div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#9a9aa0;margin-top:8px;">1,3 GB de 1,8 GB · 00:48 restantes</div>
+              </div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:16px;color:#9a9aa0;cursor:pointer;flex:none;">✕</span>
+            </div>
+
+            <div>
+              <label style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a8a90;margin-bottom:8px;display:block;">Título</label>
+              <input value="O que muda, na prática, com o novo marco de infraestrutura" style="width:100%;border:1px solid #e0e0e4;border-radius:9px;padding:12px 14px;font-family:'Archivo',sans-serif;font-size:15px;color:#0b0b0c;background:#fff;"/>
+            </div>
+            <div>
+              <label style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a8a90;margin-bottom:8px;display:block;">Descrição</label>
+              <textarea rows="4" style="width:100%;border:1px solid #e0e0e4;border-radius:9px;padding:12px 14px;font-family:'Archivo',sans-serif;font-size:15px;color:#3a3a3d;background:#fff;resize:vertical;line-height:1.5;">Análise em vídeo sobre os principais pontos do novo marco: prioridades de saneamento e mobilidade, prazos e fontes de financiamento das obras até 2030.</textarea>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+              <div>
+                <label style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a8a90;margin-bottom:8px;display:block;">Editoria</label>
+                <div style="position:relative;">
+                  <select style="width:100%;border:1px solid #e0e0e4;border-radius:9px;padding:12px 14px;font-family:'Archivo',sans-serif;font-size:15px;color:#0b0b0c;background:#fff;appearance:none;cursor:pointer;">
+                    <option>Política</option><option>Economia</option><option>Esportes</option><option>Tecnologia</option>
+                  </select>
+                  <span style="position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;color:#8a8a90;">▾</span>
+                </div>
+              </div>
+              <div>
+                <label style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a8a90;margin-bottom:8px;display:block;">Tags</label>
+                <div style="border:1px solid #e0e0e4;border-radius:9px;padding:8px 10px;display:flex;gap:7px;flex-wrap:wrap;align-items:center;min-height:46px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;background:#f1f1f3;color:#0b0b0c;padding:5px 10px;border-radius:6px;">Infraestrutura ✕</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;background:#f1f1f3;color:#0b0b0c;padding:5px 10px;border-radius:6px;">Congresso ✕</span>
+                  <span style="font-family:'Archivo',sans-serif;font-size:14px;color:#9a9aa0;">Adicionar…</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:22px;border:1px solid #e6e6e9;border-radius:14px;padding:22px;">
+            <div>
+              <label style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a8a90;margin-bottom:10px;display:block;">Capa (16:9)</label>
+              <image-slot id="st-cover" style="width:100%;height:160px;" shape="rounded" radius="8" placeholder="Enviar capa"></image-slot>
+            </div>
+
+            <div>
+              <label style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a8a90;margin-bottom:12px;display:block;">Visibilidade</label>
+              <div style="display:flex;flex-direction:column;gap:12px;">
+                <div style="display:flex;align-items:center;gap:10px;"><span style="width:18px;height:18px;border-radius:50%;border:5px solid #0b0b0c;flex:none;"></span><span style="font-family:'Archivo',sans-serif;font-size:14.5px;color:#0b0b0c;font-weight:600;">Público</span></div>
+                <div style="display:flex;align-items:center;gap:10px;"><span style="width:18px;height:18px;border-radius:50%;border:1.5px solid #cfcfd4;flex:none;"></span><span style="font-family:'Archivo',sans-serif;font-size:14.5px;color:#3a3a3d;">Somente assinantes</span></div>
+                <div style="display:flex;align-items:center;gap:10px;"><span style="width:18px;height:18px;border-radius:50%;border:1.5px solid #cfcfd4;flex:none;"></span><span style="font-family:'Archivo',sans-serif;font-size:14.5px;color:#3a3a3d;">Rascunho</span></div>
+              </div>
+            </div>
+
+            <div>
+              <label style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a8a90;margin-bottom:10px;display:block;">Agendar publicação</label>
+              <input value="01/07/2026  09:00" style="width:100%;border:1px solid #e0e0e4;border-radius:9px;padding:11px 14px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#0b0b0c;background:#fff;"/>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:14px;padding-top:4px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <span style="font-family:'Archivo',sans-serif;font-size:14px;color:#0b0b0c;">Transcrição automática</span>
+                <span style="width:42px;height:24px;border-radius:999px;background:#0b0b0c;position:relative;display:inline-block;flex:none;"><span style="position:absolute;top:3px;left:21px;width:18px;height:18px;border-radius:50%;background:#fff;"></span></span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <span style="font-family:'Archivo',sans-serif;font-size:14px;color:#0b0b0c;">Gerar legendas (VTT)</span>
+                <span style="width:42px;height:24px;border-radius:999px;background:#0b0b0c;position:relative;display:inline-block;flex:none;"><span style="position:absolute;top:3px;left:21px;width:18px;height:18px;border-radius:50%;background:#fff;"></span></span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <span style="font-family:'Archivo',sans-serif;font-size:14px;color:#3a3a3d;">Destacar no Lupa Play</span>
+                <span style="width:42px;height:24px;border-radius:999px;background:#d4d4d8;position:relative;display:inline-block;flex:none;"><span style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;"></span></span>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:10px;border-top:1px solid #e6e6e9;padding-top:18px;">
+              <button style="background:#0b0b0c;color:#fff;border:none;font-family:'Archivo',sans-serif;font-weight:700;font-size:15px;padding:13px;border-radius:10px;cursor:pointer;">Publicar</button>
+              <button style="background:#fff;color:#0b0b0c;border:1px solid #0b0b0c;font-family:'Archivo',sans-serif;font-weight:700;font-size:15px;padding:13px;border-radius:10px;cursor:pointer;">Salvar rascunho</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== MOBILE ===================== -->
+  <section id="1e" style="max-width:1860px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;"><span style="background:#0b0b0c;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;padding:4px 10px;border-radius:6px;">1e</span><span style="font-family:'Archivo',sans-serif;font-weight:700;font-size:16px;color:#0b0b0c;">Versão mobile</span><span style="font-family:'Newsreader',Georgia,serif;font-size:14px;color:#6b6b70;">vídeo em primeiro plano · Lupa Play</span></div>
+    <div style="display:flex;gap:44px;flex-wrap:wrap;align-items:flex-start;">
+      <div><div style="width:390px;background:#0b0b0c;border-radius:46px;padding:11px;box-shadow:0 40px 90px -30px rgba(10,10,15,.5);flex:none;"><div style="background:#fff;border-radius:36px;overflow:hidden;position:relative;height:844px;display:flex;flex-direction:column;"><span style="position:absolute;top:9px;left:50%;transform:translateX(-50%);width:100px;height:26px;background:#0b0b0c;border-radius:999px;z-index:6;"></span><div style="height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;flex:none;position:relative;z-index:5;"><span style="font-family:'Archivo',sans-serif;font-weight:700;font-size:14px;color:#0b0b0c;">9:41</span><div style="display:flex;align-items:center;gap:7px;"><svg width="18" height="12" viewBox="0 0 18 12" fill="#0b0b0c"><rect x="0" y="8" width="3" height="4" rx="1"></rect><rect x="5" y="5" width="3" height="7" rx="1"></rect><rect x="10" y="2" width="3" height="10" rx="1"></rect><rect x="15" y="0" width="3" height="12" rx="1"></rect></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#0b0b0c;">5G</span><span style="width:24px;height:12px;border:1.5px solid #0b0b0c;border-radius:3px;display:inline-block;position:relative;"><span style="position:absolute;top:2px;left:2px;bottom:2px;width:14px;background:#0b0b0c;border-radius:1px;"></span></span></div></div><div style="display:flex;align-items:center;justify-content:space-between;padding:2px 18px 12px;flex:none;"><span style="display:flex;flex-direction:column;gap:4px;cursor:pointer;"><span style="width:20px;height:2px;background:#0b0b0c;"></span><span style="width:20px;height:2px;background:#0b0b0c;"></span><span style="width:20px;height:2px;background:#0b0b0c;"></span></span><div style="display:flex;align-items:center;gap:8px;"><svg width="24" height="24" viewBox="0 0 48 48" fill="none"><path d="M32 11 A15 15 0 1 0 32 33" stroke="#0b0b0c" stroke-width="4.6" stroke-linecap="round"></path><path d="M18 14.5 L18 29.5 L31 22 Z" fill="#0b0b0c"></path></svg><div style="display:flex;align-items:baseline;gap:.14em;line-height:.9;"><span style="font-family:'Archivo',sans-serif;font-weight:800;font-size:16px;color:#0b0b0c;">LUPA</span><span style="font-family:'Archivo',sans-serif;font-weight:500;font-size:16px;color:#3a3a3d;">NOTÍCIAS</span></div></div><div style="display:flex;align-items:center;gap:12px;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#0b0b0c" stroke-width="2"></circle><line x1="16" y1="16" x2="21" y2="21" stroke="#0b0b0c" stroke-width="2" stroke-linecap="round"></line></svg><span style="width:8px;height:8px;border-radius:50%;background:#0b0b0c;"></span></div></div><div style="flex:1;overflow:hidden;"><div style="position:relative;"><image-slot id="m-hero" style="width:100%;height:216px;" shape="rect" placeholder=""></image-slot><div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,9,7,.2) 0%,rgba(10,9,7,0) 34%,rgba(10,9,7,.92) 100%);"></div><span style="position:absolute;top:14px;left:14px;"><span style="display:inline-flex;align-items:center;gap:6px;background:#0b0b0c;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.06em;padding:5px 9px;border-radius:999px;"><span style="width:6px;height:6px;border-radius:50%;background:#fff;animation:lupaPulse 1.4s infinite;"></span>AO VIVO</span></span><span style="position:absolute;top:14px;right:14px;background:rgba(11,11,12,.82);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:3px 7px;border-radius:4px;">18:24</span><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><span style="width:58px;height:58px;border-radius:50%;background:rgba(11,11,12,.5);display:flex;align-items:center;justify-content:center;border:1.5px solid rgba(255,255,255,.7);"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M8 5 L8 19 L19 12 Z" fill="#fff"></path></svg></span></div><div style="position:absolute;left:0;right:0;bottom:0;padding:16px 16px 18px;color:#fff;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;">Vídeo · Política · Ao vivo</span><h1 style="font-family:'Archivo',sans-serif;font-weight:800;font-size:21px;line-height:1.1;letter-spacing:-.01em;margin:6px 0 0;">Ao vivo: a votação do novo marco de infraestrutura</h1></div></div><div style="padding:18px 0 6px;"><div style="display:flex;align-items:center;justify-content:space-between;padding:0 16px;margin-bottom:12px;"><div style="display:flex;align-items:center;gap:7px;"><svg width="18" height="18" viewBox="0 0 48 48" fill="none"><path d="M32 11 A15 15 0 1 0 32 33" stroke="#0b0b0c" stroke-width="4.6" stroke-linecap="round"></path><path d="M18 14.5 L18 29.5 L31 22 Z" fill="#0b0b0c"></path></svg><span style="font-family:'Archivo',sans-serif;font-weight:800;font-size:16px;color:#0b0b0c;">Lupa Play</span></div><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8a8a90;">Ver tudo ›</span></div><div style="display:flex;gap:12px;overflow:hidden;padding:0 16px;"><div style="width:158px;flex:none;"><div style="position:relative;"><image-slot id="m-r1" style="width:158px;height:96px;" shape="rounded" radius="7" placeholder=""></image-slot><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><span style="width:34px;height:34px;border-radius:50%;background:rgba(11,11,12,.5);display:flex;align-items:center;justify-content:center;border:1.5px solid rgba(255,255,255,.7);"><svg width="11" height="11" viewBox="0 0 24 24"><path d="M8 5 L8 19 L19 12 Z" fill="#fff"></path></svg></span></div><span style="position:absolute;bottom:8px;right:8px;background:rgba(11,11,12,.85);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 6px;border-radius:4px;">12:40</span></div><div style="margin-top:9px;font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#8a8a90;">Vídeo · Política</div><h4 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:13.5px;line-height:1.2;color:#0b0b0c;margin:4px 0 0;">O que muda com o novo marco</h4></div><div style="width:158px;flex:none;"><div style="position:relative;"><image-slot id="m-r2" style="width:158px;height:96px;" shape="rounded" radius="7" placeholder=""></image-slot><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><span style="width:34px;height:34px;border-radius:50%;background:rgba(11,11,12,.5);display:flex;align-items:center;justify-content:center;border:1.5px solid rgba(255,255,255,.7);"><svg width="11" height="11" viewBox="0 0 24 24"><path d="M8 5 L8 19 L19 12 Z" fill="#fff"></path></svg></span></div><span style="position:absolute;bottom:8px;right:8px;background:rgba(11,11,12,.85);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 6px;border-radius:4px;">38:12</span></div><div style="margin-top:9px;font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#8a8a90;">Podcast · Economia</div><h4 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:13.5px;line-height:1.2;color:#0b0b0c;margin:4px 0 0;">Café com Mercado: os juros</h4></div><div style="width:158px;flex:none;"><div style="position:relative;"><image-slot id="m-r3" style="width:158px;height:96px;" shape="rounded" radius="7" placeholder=""></image-slot><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><span style="width:34px;height:34px;border-radius:50%;background:rgba(11,11,12,.5);display:flex;align-items:center;justify-content:center;border:1.5px solid rgba(255,255,255,.7);"><svg width="11" height="11" viewBox="0 0 24 24"><path d="M8 5 L8 19 L19 12 Z" fill="#fff"></path></svg></span></div><span style="position:absolute;bottom:8px;right:8px;background:rgba(11,11,12,.85);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 6px;border-radius:4px;">08:05</span></div><div style="margin-top:9px;font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#8a8a90;">Vídeo · Esportes</div><h4 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:13.5px;line-height:1.2;color:#0b0b0c;margin:4px 0 0;">Bastidores da estreia</h4></div></div></div><div style="padding:12px 16px 16px;"><div style="font-family:'Archivo',sans-serif;font-weight:800;font-size:16px;color:#0b0b0c;margin:6px 0 12px;">Últimos vídeos</div><div style="position:relative;margin-bottom:16px;"><image-slot id="m-f1" style="width:100%;height:184px;" shape="rounded" radius="8" placeholder=""></image-slot><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><span style="width:48px;height:48px;border-radius:50%;background:rgba(11,11,12,.5);display:flex;align-items:center;justify-content:center;border:1.5px solid rgba(255,255,255,.7);"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M8 5 L8 19 L19 12 Z" fill="#fff"></path></svg></span></div><span style="position:absolute;bottom:8px;right:8px;background:rgba(11,11,12,.85);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 6px;border-radius:4px;">05:12</span></div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#8a8a90;">Vídeo · Economia · há 1 h</div><h3 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:18px;line-height:1.15;color:#0b0b0c;margin:7px 0 0;">Juros: o que esperar do segundo semestre, em 5 minutos</h3><div style="display:flex;gap:12px;margin-top:18px;"><div style="position:relative;flex:none;"><image-slot id="m-f2" style="width:132px;height:82px;" shape="rounded" radius="6" placeholder=""></image-slot><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><span style="width:30px;height:30px;border-radius:50%;background:rgba(11,11,12,.5);display:flex;align-items:center;justify-content:center;border:1.5px solid rgba(255,255,255,.7);"><svg width="10" height="10" viewBox="0 0 24 24"><path d="M8 5 L8 19 L19 12 Z" fill="#fff"></path></svg></span></div></div><div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#8a8a90;">Vídeo · Cidades</div><h4 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:15px;line-height:1.2;color:#0b0b0c;margin:5px 0 0;">Chuvas no Sul: o mapa das 12 cidades em alerta</h4></div></div></div></div><div style="flex:none;border-top:1px solid #ededf0;background:#fff;display:flex;justify-content:space-around;align-items:center;padding:9px 8px 20px;"><div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><span style="color:#0b0b0c;display:flex;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 11 L12 4 L20 11 V20 a1 1 0 0 1 -1 1 H5 a1 1 0 0 1 -1 -1 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path></svg></span><span style="font-family:'Archivo',sans-serif;font-size:10px;font-weight:700;color:#0b0b0c;">Início</span></div><div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><span style="color:#9a9aa0;display:flex;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"></circle><path d="M10 8.5 L10 15.5 L16 12 Z" fill="currentColor"></path></svg></span><span style="font-family:'Archivo',sans-serif;font-size:10px;font-weight:500;color:#9a9aa0;">Play</span></div><div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><span style="color:#9a9aa0;display:flex;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"></circle><line x1="16" y1="16" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line></svg></span><span style="font-family:'Archivo',sans-serif;font-size:10px;font-weight:500;color:#9a9aa0;">Buscar</span></div><div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><span style="color:#9a9aa0;display:flex;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M6 4 h12 v16 l-6-4 -6 4 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path></svg></span><span style="font-family:'Archivo',sans-serif;font-size:10px;font-weight:500;color:#9a9aa0;">Salvos</span></div><div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><span style="color:#9a9aa0;display:flex;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"></circle><path d="M4 21 a8 8 0 0 1 16 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg></span><span style="font-family:'Archivo',sans-serif;font-size:10px;font-weight:500;color:#9a9aa0;">Perfil</span></div></div></div></div><div style="text-align:center;margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8a8a90;">Home · video-first</div></div>
+      <div><div style="width:390px;background:#0b0b0c;border-radius:46px;padding:11px;box-shadow:0 40px 90px -30px rgba(10,10,15,.5);flex:none;"><div style="background:#fff;border-radius:36px;overflow:hidden;position:relative;height:844px;display:flex;flex-direction:column;"><span style="position:absolute;top:9px;left:50%;transform:translateX(-50%);width:100px;height:26px;background:#0b0b0c;border-radius:999px;z-index:6;"></span><div style="height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;flex:none;position:relative;z-index:5;"><span style="font-family:'Archivo',sans-serif;font-weight:700;font-size:14px;color:#0b0b0c;">9:41</span><div style="display:flex;align-items:center;gap:7px;"><svg width="18" height="12" viewBox="0 0 18 12" fill="#0b0b0c"><rect x="0" y="8" width="3" height="4" rx="1"></rect><rect x="5" y="5" width="3" height="7" rx="1"></rect><rect x="10" y="2" width="3" height="10" rx="1"></rect><rect x="15" y="0" width="3" height="12" rx="1"></rect></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#0b0b0c;">5G</span><span style="width:24px;height:12px;border:1.5px solid #0b0b0c;border-radius:3px;display:inline-block;position:relative;"><span style="position:absolute;top:2px;left:2px;bottom:2px;width:14px;background:#0b0b0c;border-radius:1px;"></span></span></div></div><div style="display:flex;align-items:center;justify-content:space-between;padding:2px 18px 10px;flex:none;"><div style="display:flex;align-items:center;gap:8px;"><svg width="24" height="24" viewBox="0 0 48 48" fill="none"><path d="M32 11 A15 15 0 1 0 32 33" stroke="#0b0b0c" stroke-width="4.6" stroke-linecap="round"></path><path d="M18 14.5 L18 29.5 L31 22 Z" fill="#0b0b0c"></path></svg><span style="font-family:'Archivo',sans-serif;font-weight:800;font-size:20px;color:#0b0b0c;">Lupa Play</span></div><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#0b0b0c" stroke-width="2"></circle><line x1="16" y1="16" x2="21" y2="21" stroke="#0b0b0c" stroke-width="2" stroke-linecap="round"></line></svg></div><div style="display:flex;gap:9px;padding:0 16px 14px;flex:none;"><span style="font-family:'Archivo',sans-serif;font-weight:700;font-size:13px;background:#0b0b0c;color:#fff;padding:8px 15px;border-radius:999px;">Vídeos</span><span style="font-family:'Archivo',sans-serif;font-weight:600;font-size:13px;color:#3a3a3d;border:1px solid #e6e6e9;padding:8px 15px;border-radius:999px;">Podcasts</span><span style="font-family:'Archivo',sans-serif;font-weight:600;font-size:13px;color:#3a3a3d;border:1px solid #e6e6e9;padding:8px 15px;border-radius:999px;">Ao Vivo</span><span style="font-family:'Archivo',sans-serif;font-weight:600;font-size:13px;color:#3a3a3d;border:1px solid #e6e6e9;padding:8px 15px;border-radius:999px;">Cortes</span></div><div style="flex:1;overflow:hidden;padding:0 16px;"><div style="position:relative;margin-bottom:8px;"><image-slot id="m-pf" style="width:100%;height:196px;" shape="rounded" radius="8" placeholder=""></image-slot><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><span style="width:52px;height:52px;border-radius:50%;background:rgba(11,11,12,.5);display:flex;align-items:center;justify-content:center;border:1.5px solid rgba(255,255,255,.7);"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M8 5 L8 19 L19 12 Z" fill="#fff"></path></svg></span></div><span style="position:absolute;top:12px;left:12px;"><span style="display:inline-flex;align-items:center;gap:6px;background:#0b0b0c;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.06em;padding:5px 9px;border-radius:999px;"><span style="width:6px;height:6px;border-radius:50%;background:#fff;animation:lupaPulse 1.4s infinite;"></span>AO VIVO</span></span><span style="position:absolute;bottom:8px;right:8px;background:rgba(11,11,12,.85);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 6px;border-radius:4px;">18:24</span></div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#8a8a90;">Vídeo · Política · Ao vivo</div><h3 style="font-family:'Archivo',sans-serif;font-weight:800;font-size:18px;line-height:1.15;color:#0b0b0c;margin:7px 0 4px;">Cobertura ao vivo: a votação do novo marco</h3><div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#9a9aa0;margin-bottom:6px;">12,4 mil assistindo</div><div style="display:flex;gap:12px;padding:14px 0;border-bottom:1px solid #f0f0f2;"><div style="position:relative;flex:none;"><image-slot id="m-p1" style="width:130px;height:80px;" shape="rounded" radius="6" placeholder=""></image-slot><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><span style="width:30px;height:30px;border-radius:50%;background:rgba(11,11,12,.5);display:flex;align-items:center;justify-content:center;border:1.5px solid rgba(255,255,255,.7);"><svg width="10" height="10" viewBox="0 0 24 24"><path d="M8 5 L8 19 L19 12 Z" fill="#fff"></path></svg></span></div><span style="position:absolute;bottom:8px;right:8px;background:rgba(11,11,12,.85);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 6px;border-radius:4px;">12:40</span></div><div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#8a8a90;">Vídeo · Economia</div><h4 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:15px;line-height:1.2;color:#0b0b0c;margin:5px 0 6px;">Juros: o que esperar do 2º semestre</h4><div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#9a9aa0;">24 mil views · há 2 h</div></div></div><div style="display:flex;gap:12px;padding:14px 0;border-bottom:1px solid #f0f0f2;"><div style="position:relative;flex:none;"><image-slot id="m-p2" style="width:130px;height:80px;" shape="rounded" radius="6" placeholder=""></image-slot><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><span style="width:30px;height:30px;border-radius:50%;background:rgba(11,11,12,.5);display:flex;align-items:center;justify-content:center;border:1.5px solid rgba(255,255,255,.7);"><svg width="10" height="10" viewBox="0 0 24 24"><path d="M8 5 L8 19 L19 12 Z" fill="#fff"></path></svg></span></div><span style="position:absolute;bottom:8px;right:8px;background:rgba(11,11,12,.85);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 6px;border-radius:4px;">38:12</span></div><div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#8a8a90;">Podcast · Mercado</div><h4 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:15px;line-height:1.2;color:#0b0b0c;margin:5px 0 6px;">Café com Mercado: câmbio e bolsa</h4><div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#9a9aa0;">11 mil plays · há 5 h</div></div></div><div style="display:flex;gap:12px;padding:14px 0;border-bottom:1px solid #f0f0f2;"><div style="position:relative;flex:none;"><image-slot id="m-p3" style="width:130px;height:80px;" shape="rounded" radius="6" placeholder=""></image-slot><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><span style="width:30px;height:30px;border-radius:50%;background:rgba(11,11,12,.5);display:flex;align-items:center;justify-content:center;border:1.5px solid rgba(255,255,255,.7);"><svg width="10" height="10" viewBox="0 0 24 24"><path d="M8 5 L8 19 L19 12 Z" fill="#fff"></path></svg></span></div><span style="position:absolute;bottom:8px;right:8px;background:rgba(11,11,12,.85);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 6px;border-radius:4px;">08:05</span></div><div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#8a8a90;">Vídeo · Esportes</div><h4 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:15px;line-height:1.2;color:#0b0b0c;margin:5px 0 6px;">Bastidores da estreia da seleção</h4><div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#9a9aa0;">52 mil views · há 8 h</div></div></div></div><div style="flex:none;border-top:1px solid #ededf0;background:#fff;display:flex;justify-content:space-around;align-items:center;padding:9px 8px 20px;"><div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><span style="color:#9a9aa0;display:flex;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 11 L12 4 L20 11 V20 a1 1 0 0 1 -1 1 H5 a1 1 0 0 1 -1 -1 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path></svg></span><span style="font-family:'Archivo',sans-serif;font-size:10px;font-weight:500;color:#9a9aa0;">Início</span></div><div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><span style="color:#0b0b0c;display:flex;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"></circle><path d="M10 8.5 L10 15.5 L16 12 Z" fill="currentColor"></path></svg></span><span style="font-family:'Archivo',sans-serif;font-size:10px;font-weight:700;color:#0b0b0c;">Play</span></div><div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><span style="color:#9a9aa0;display:flex;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"></circle><line x1="16" y1="16" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line></svg></span><span style="font-family:'Archivo',sans-serif;font-size:10px;font-weight:500;color:#9a9aa0;">Buscar</span></div><div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><span style="color:#9a9aa0;display:flex;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M6 4 h12 v16 l-6-4 -6 4 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path></svg></span><span style="font-family:'Archivo',sans-serif;font-size:10px;font-weight:500;color:#9a9aa0;">Salvos</span></div><div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><span style="color:#9a9aa0;display:flex;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"></circle><path d="M4 21 a8 8 0 0 1 16 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg></span><span style="font-family:'Archivo',sans-serif;font-size:10px;font-weight:500;color:#9a9aa0;">Perfil</span></div></div></div></div><div style="text-align:center;margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8a8a90;">Lupa Play</div></div>
+      <div><div style="width:390px;background:#0b0b0c;border-radius:46px;padding:11px;box-shadow:0 40px 90px -30px rgba(10,10,15,.5);flex:none;"><div style="background:#fff;border-radius:36px;overflow:hidden;position:relative;height:844px;display:flex;flex-direction:column;"><span style="position:absolute;top:9px;left:50%;transform:translateX(-50%);width:100px;height:26px;background:#0b0b0c;border-radius:999px;z-index:6;"></span><div style="height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;flex:none;position:relative;z-index:5;"><span style="font-family:'Archivo',sans-serif;font-weight:700;font-size:14px;color:#0b0b0c;">9:41</span><div style="display:flex;align-items:center;gap:7px;"><svg width="18" height="12" viewBox="0 0 18 12" fill="#0b0b0c"><rect x="0" y="8" width="3" height="4" rx="1"></rect><rect x="5" y="5" width="3" height="7" rx="1"></rect><rect x="10" y="2" width="3" height="10" rx="1"></rect><rect x="15" y="0" width="3" height="12" rx="1"></rect></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#0b0b0c;">5G</span><span style="width:24px;height:12px;border:1.5px solid #0b0b0c;border-radius:3px;display:inline-block;position:relative;"><span style="position:absolute;top:2px;left:2px;bottom:2px;width:14px;background:#0b0b0c;border-radius:1px;"></span></span></div></div><div style="position:relative;height:224px;background:#0b0b0c;flex:none;"><image-slot id="w-player" style="width:100%;height:100%;" shape="rect" placeholder=""></image-slot><div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,9,7,.2),rgba(10,9,7,0) 40%,rgba(10,9,7,.55));"></div><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><span style="width:60px;height:60px;border-radius:50%;background:rgba(11,11,12,.5);display:flex;align-items:center;justify-content:center;border:1.5px solid rgba(255,255,255,.7);"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M8 5 L8 19 L19 12 Z" fill="#fff"></path></svg></span></div><div style="position:absolute;left:0;right:0;bottom:0;padding:0 14px 12px;"><div style="display:flex;align-items:center;gap:10px;color:#fff;"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M8 5 L8 19 L19 12 Z" fill="#fff"></path></svg><div style="flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.35);position:relative;"><div style="width:32%;height:100%;background:#fff;border-radius:2px;"></div><span style="position:absolute;left:32%;top:50%;transform:translate(-50%,-50%);width:11px;height:11px;border-radius:50%;background:#fff;"></span></div><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#fff;">4:12 / 18:24</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 9 V4 h5 M20 9 V4 h-5 M4 15 v5 h5 M20 15 v5 h-5" stroke-linecap="round"></path></svg></div></div></div><div style="flex:1;overflow:hidden;padding:16px;"><h1 style="font-family:'Archivo',sans-serif;font-weight:800;font-size:19px;line-height:1.2;color:#0b0b0c;margin:0;">Cobertura ao vivo: a votação do novo marco de infraestrutura</h1><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#9a9aa0;margin-top:8px;">24 mil visualizações · há 3 h</div><div style="display:flex;gap:26px;padding:16px 0;border-bottom:1px solid #f0f0f2;"><div style="display:flex;flex-direction:column;align-items:center;gap:5px;flex:none;"><span style="color:#0b0b0c;display:flex;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20 C6 15.5 4 12 4 9 a4 4 0 0 1 8 -0.5 a4 4 0 0 1 8 0.5 c0 3 -2 6.5 -8 11 Z" stroke-linejoin="round"></path></svg></span><span style="font-family:'Archivo',sans-serif;font-size:11px;color:#3a3a3d;font-weight:600;">1,2 mil</span></div><div style="display:flex;flex-direction:column;align-items:center;gap:5px;flex:none;"><span style="color:#0b0b0c;display:flex;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12 L20 4 L14 20 L11 13 Z" stroke-linejoin="round"></path></svg></span><span style="font-family:'Archivo',sans-serif;font-size:11px;color:#3a3a3d;font-weight:600;">Enviar</span></div><div style="display:flex;flex-direction:column;align-items:center;gap:5px;flex:none;"><span style="color:#0b0b0c;display:flex;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4 h12 v16 l-6-4 -6 4 Z" stroke-linejoin="round"></path></svg></span><span style="font-family:'Archivo',sans-serif;font-size:11px;color:#3a3a3d;font-weight:600;">Salvar</span></div><div style="display:flex;flex-direction:column;align-items:center;gap:5px;flex:none;"><span style="color:#0b0b0c;display:flex;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4 v11 M8 11 l4 4 4 -4 M5 20 h14" stroke-linecap="round" stroke-linejoin="round"></path></svg></span><span style="font-family:'Archivo',sans-serif;font-size:11px;color:#3a3a3d;font-weight:600;">Baixar</span></div></div><div style="display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #f0f0f2;"><image-slot id="w-ch" style="width:40px;height:40px;flex:none;" shape="circle" placeholder=""></image-slot><div style="flex:1;"><div style="font-family:'Archivo',sans-serif;font-weight:700;font-size:14px;color:#0b0b0c;">Lupa · Política</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#9a9aa0;">148 mil seguidores</div></div><span style="background:#0b0b0c;color:#fff;font-family:'Archivo',sans-serif;font-weight:700;font-size:12.5px;padding:8px 16px;border-radius:999px;">Seguir</span></div><div style="font-family:'Archivo',sans-serif;font-weight:800;font-size:15px;color:#0b0b0c;margin:16px 0 4px;">A seguir</div><div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #f0f0f2;"><div style="position:relative;flex:none;"><image-slot id="w-u1" style="width:120px;height:74px;" shape="rounded" radius="6" placeholder=""></image-slot><span style="position:absolute;bottom:8px;right:8px;background:rgba(11,11,12,.85);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 6px;border-radius:4px;">12:40</span></div><div><h4 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:14px;line-height:1.2;color:#0b0b0c;margin:0;">O que muda, na prática, com o novo marco</h4><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#9a9aa0;margin-top:6px;">Lupa · Política · 24 mil views</div></div></div><div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #f0f0f2;"><div style="position:relative;flex:none;"><image-slot id="w-u2" style="width:120px;height:74px;" shape="rounded" radius="6" placeholder=""></image-slot><span style="position:absolute;bottom:8px;right:8px;background:rgba(11,11,12,.85);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 6px;border-radius:4px;">05:12</span></div><div><h4 style="font-family:'Archivo',sans-serif;font-weight:700;font-size:14px;line-height:1.2;color:#0b0b0c;margin:0;">Juros: o que esperar do 2º semestre</h4><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#9a9aa0;margin-top:6px;">Lupa · Economia · 18 mil views</div></div></div></div><div style="flex:none;height:24px;display:flex;align-items:center;justify-content:center;"><span style="width:130px;height:5px;border-radius:999px;background:#0b0b0c;"></span></div></div></div><div style="text-align:center;margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8a8a90;">Player / assistir</div></div>
+      <div><div style="width:390px;background:#0b0b0c;border-radius:46px;padding:11px;box-shadow:0 40px 90px -30px rgba(10,10,15,.5);flex:none;"><div style="background:#0b0b0c;border-radius:36px;overflow:hidden;position:relative;height:844px;display:flex;flex-direction:column;"><span style="position:absolute;top:9px;left:50%;transform:translateX(-50%);width:100px;height:26px;background:#0b0b0c;border-radius:999px;z-index:6;"></span><image-slot id="c-video" style="position:absolute;inset:0;width:100%;height:100%;" shape="rect" placeholder="Vídeo vertical (Cortes)"></image-slot><div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,9,7,.55) 0%,rgba(10,9,7,0) 22%,rgba(10,9,7,0) 55%,rgba(10,9,7,.85) 100%);"></div><div style="height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;flex:none;position:relative;z-index:5;"><span style="font-family:'Archivo',sans-serif;font-weight:700;font-size:14px;color:#fff;">9:41</span><div style="display:flex;align-items:center;gap:7px;"><svg width="18" height="12" viewBox="0 0 18 12" fill="#fff"><rect x="0" y="8" width="3" height="4" rx="1"></rect><rect x="5" y="5" width="3" height="7" rx="1"></rect><rect x="10" y="2" width="3" height="10" rx="1"></rect><rect x="15" y="0" width="3" height="12" rx="1"></rect></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#fff;">5G</span><span style="width:24px;height:12px;border:1.5px solid #fff;border-radius:3px;display:inline-block;position:relative;"><span style="position:absolute;top:2px;left:2px;bottom:2px;width:14px;background:#fff;border-radius:1px;"></span></span></div></div><div style="position:absolute;top:52px;left:0;right:0;display:flex;justify-content:center;gap:24px;z-index:5;"><span style="font-family:'Archivo',sans-serif;font-weight:600;font-size:15px;color:rgba(255,255,255,.6);">Seguindo</span><span style="font-family:'Archivo',sans-serif;font-weight:800;font-size:15px;color:#fff;border-bottom:2px solid #fff;padding-bottom:4px;">Para você</span></div><div style="position:absolute;top:50px;left:18px;z-index:5;display:flex;align-items:center;gap:6px;"><svg width="18" height="18" viewBox="0 0 48 48" fill="none"><path d="M32 11 A15 15 0 1 0 32 33" stroke="#fff" stroke-width="4.6" stroke-linecap="round"></path><path d="M18 14.5 L18 29.5 L31 22 Z" fill="#fff"></path></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;color:#fff;">CORTES</span></div><div style="position:absolute;right:14px;bottom:120px;display:flex;flex-direction:column;align-items:center;gap:22px;z-index:5;"><image-slot id="c-av" style="width:48px;height:48px;flex:none;" shape="circle" placeholder=""></image-slot><div style="display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="display:flex;"><svg width="30" height="30" viewBox="0 0 24 24" fill="#fff"><path d="M12 21 C5.5 15.5 3.5 12 3.5 8.8 a4.3 4.3 0 0 1 8.5 -0.6 a4.3 4.3 0 0 1 8.5 0.6 c0 3.2 -2 6.7 -8.5 12.2 Z"></path></svg></span><span style="font-family:'Archivo',sans-serif;font-size:11px;font-weight:600;color:#fff;">3,4 mil</span></div><div style="display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="display:flex;"><svg width="29" height="29" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 5 h16 v11 h-9 l-5 4 v-4 h-2 Z" stroke-linejoin="round"></path></svg></span><span style="font-family:'Archivo',sans-serif;font-size:11px;font-weight:600;color:#fff;">128</span></div><div style="display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="display:flex;"><svg width="29" height="29" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 12 L20 4 L14 20 L11 13 Z" stroke-linejoin="round"></path></svg></span><span style="font-family:'Archivo',sans-serif;font-size:11px;font-weight:600;color:#fff;">Enviar</span></div><span style="width:44px;height:44px;border-radius:50%;background:#0b0b0c;border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 48 48" fill="none"><path d="M32 11 A15 15 0 1 0 32 33" stroke="#fff" stroke-width="4.6" stroke-linecap="round"></path><path d="M18 14.5 L18 29.5 L31 22 Z" fill="#fff"></path></svg></span></div><div style="position:absolute;left:16px;right:86px;bottom:44px;z-index:5;color:#fff;"><div style="font-family:'Archivo',sans-serif;font-weight:800;font-size:15px;">@lupa.politica</div><p style="font-family:'Archivo',sans-serif;font-size:14px;line-height:1.35;margin:8px 0 10px;">Em 40 segundos: o que realmente muda com o novo marco de infraestrutura 🎥</p><div style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:rgba(255,255,255,.85);"><svg width="13" height="13" viewBox="0 0 24 24" fill="#fff"><path d="M9 18 V6 l10 -2 v12" stroke="#fff" stroke-width="2" fill="none"></path><circle cx="7" cy="18" r="2.4"></circle><circle cx="17" cy="16" r="2.4"></circle></svg>Áudio original · Lupa Play</div></div><div style="position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:center;z-index:5;"><span style="width:130px;height:5px;border-radius:999px;background:rgba(255,255,255,.85);"></span></div></div></div><div style="text-align:center;margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8a8a90;">Cortes · vertical</div></div>
+    </div>
+  </section>
+
+  <div data-end="1"></div>
+</div>
+</x-dc>
+</body>
+</html>
