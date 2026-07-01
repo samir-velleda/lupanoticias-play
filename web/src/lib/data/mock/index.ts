@@ -22,7 +22,6 @@ import type {
   Paged,
   PageOpts,
   Pauta,
-  Playlist,
   RelatorioOpts,
   RelatorioResultado,
   RevisaoMateria,
