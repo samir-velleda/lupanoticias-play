@@ -51,14 +51,14 @@ export class LupaNetworkStack extends Stack {
     this.appSecurityGroup = new ec2.SecurityGroup(this, 'AppSg', {
       vpc: this.vpc,
       securityGroupName: resourceName('app-sg', envName),
-      description: 'Lupa app/compute (Lambdas) — fonte de acesso ao Aurora.',
+      description: 'Lupa app/compute (Lambdas) - fonte de acesso ao Aurora.',
       allowAllOutbound: true,
     });
 
     this.dbSecurityGroup = new ec2.SecurityGroup(this, 'DbSg', {
       vpc: this.vpc,
       securityGroupName: resourceName('db-sg', envName),
-      description: 'Lupa Aurora — ingress 5432 somente do app-sg do projeto.',
+      description: 'Lupa Aurora - ingress 5432 somente do app-sg do projeto.',
       allowAllOutbound: false,
     });
 
