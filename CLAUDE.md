@@ -46,6 +46,15 @@ Estas regras existem para proteger a conta AWS **Boovest**, que contém **outros
 > Regra de ouro: **este projeto só ADICIONA recursos `lupa-*` isolados. Ele nunca modifica
 > nem remove nada que já exista na conta Boovest.**
 
+### ⛔ PENDÊNCIA OBRIGATÓRIA DE SEGURANÇA — origem do web app
+
+O deploy de teste `LupaWeb-dev` usa **Function URL com `authType: NONE` (pública)** atrás do
+CloudFront — aceitável **apenas** enquanto o app é dev/mock (sem dado real). **ANTES** de
+qualquer **dado real entrar no ar** (Aurora conectado, login Cognito, uploads, publicidade),
+é **OBRIGATÓRIO** endurecer a origem: reabilitar **private-origin/OAC forte** (CloudFront→Lambda
+assinado) **OU** exigir um **header secreto** injetado pelo CloudFront e validado no app.
+**Proibido `authType NONE` com dado real.** (Registrado em 2026-07-01, fase do domínio definitivo.)
+
 ---
 
 ## 1. O que é o Lupa Notícias

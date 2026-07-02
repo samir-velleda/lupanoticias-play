@@ -1,6 +1,7 @@
 # CDK
 node_modules/
 cdk.out/
+assets/lupa-web/
 *.d.ts
 *.js
 !jest.config.js

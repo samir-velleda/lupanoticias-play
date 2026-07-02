@@ -12,6 +12,7 @@ import { LupaNetworkStack } from '../lib/network-stack';
 import { LupaDataStack } from '../lib/data-stack';
 import { LupaStorageStack } from '../lib/storage-stack';
 import { LupaAuthStack } from '../lib/auth-stack';
+import { LupaWebStack } from '../lib/web-stack';
 
 const app = new App();
 
@@ -50,6 +51,20 @@ new LupaAuthStack(app, stackName('Auth', envName), {
   env,
   envName,
   description: `Lupa Cognito User Pool + grupos (${envName}).`,
+});
+
+// Web (SSR/API em Lambda + CloudFront). Importa recursos via SSM lookup —
+// sem depender/alterar as outras stacks. Domínio custom via contexto (opcional).
+const domainNamesCtx = app.node.tryGetContext('webDomainNames') as string | undefined;
+new LupaWebStack(app, stackName('Web', envName), {
+  env,
+  envName,
+  description: `Lupa Next SSR/API (Lambda Web Adapter) + CloudFront (${envName}).`,
+  lwaLayerArn: app.node.tryGetContext('lwaLayerArn') as string | undefined,
+  certificateArn: app.node.tryGetContext('webCertArn') as string | undefined,
+  domainNames: domainNamesCtx
+    ? domainNamesCtx.split(',').map((d) => d.trim()).filter(Boolean)
+    : undefined,
 });
 
 // Tags obrigatórias + auditoria de naming em toda a árvore do app.
