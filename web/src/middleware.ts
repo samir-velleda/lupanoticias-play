@@ -10,7 +10,10 @@ import type { NextRequest } from 'next/server';
  * Em dev/local `LUPA_ORIGIN_SECRET` não está setado → o guard fica inativo (não atrapalha).
  * NOTA: proibido `authType NONE` com dado real — este guard é a barreira até o OAC forte.
  */
+const PORTAIS_PROTEGIDOS = ['/admin', '/jornalista', '/estudio'];
+
 export function middleware(req: NextRequest) {
+  // 1) Guarda de origem (endurecimento — bloqueia acesso direto à Function URL).
   const secret = process.env.LUPA_ORIGIN_SECRET;
   if (secret && secret.length > 0) {
     const provided = req.headers.get('x-lupa-origin');
@@ -21,6 +24,20 @@ export function middleware(req: NextRequest) {
       });
     }
   }
+
+  // 2) Gate grosso dos portais: sem cookie de sessão → manda pro login.
+  //    A verificação fina do JWT + grupo acontece nos layouts via exigirGrupo().
+  const { pathname } = req.nextUrl;
+  const protegido = PORTAIS_PROTEGIDOS.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  );
+  if (protegido && !req.cookies.get('lupa_session')) {
+    const url = req.nextUrl.clone();
+    url.pathname = '/api/auth/login';
+    url.search = '';
+    return NextResponse.redirect(url);
+  }
+
   return NextResponse.next();
 }
 

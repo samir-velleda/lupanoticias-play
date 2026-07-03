@@ -85,6 +85,9 @@ const slugify = (s: string) =>
 export function createMockRepositories(): Repositories {
   return {
     materias: {
+      async getById(id: string) {
+        return clone(_materias.find((m) => m.id === id)) ?? null;
+      },
       async getBySlug(editoria: EditoriaSlug, slug: string) {
         return (
           clone(_materias.find((m) => m.editoria === editoria && m.slug === slug)) ?? null

@@ -47,9 +47,15 @@ new LupaStorageStack(app, stackName('Storage', envName), {
   description: `Lupa S3 (media/uploads/static) + CloudFront (${envName}).`,
 });
 
+// Base URL pública do app (CloudFront de teste hoje; domínio custom depois).
+const appBaseUrl =
+  (app.node.tryGetContext('appBaseUrl') as string | undefined) ??
+  'https://d38vv9f8v1kb7v.cloudfront.net';
+
 new LupaAuthStack(app, stackName('Auth', envName), {
   env,
   envName,
+  appBaseUrl,
   description: `Lupa Cognito User Pool + grupos (${envName}).`,
 });
 
@@ -60,6 +66,7 @@ new LupaWebStack(app, stackName('Web', envName), {
   env,
   envName,
   description: `Lupa Next SSR/API (Lambda Web Adapter) + CloudFront (${envName}).`,
+  appBaseUrl,
   lwaLayerArn: app.node.tryGetContext('lwaLayerArn') as string | undefined,
   certificateArn: app.node.tryGetContext('webCertArn') as string | undefined,
   domainNames: domainNamesCtx

@@ -10,6 +10,8 @@ import { LupaEnv, resourceName, ssmPrefix, isProd } from './config';
 
 export interface LupaAuthStackProps extends StackProps {
   readonly envName: LupaEnv;
+  /** Base URL do app (CloudFront/domínio) p/ callback/logout do OAuth. */
+  readonly appBaseUrl: string;
 }
 
 const GROUPS: ReadonlyArray<{ name: string; description: string; precedence: number }> = [
@@ -63,6 +65,12 @@ export class LupaAuthStack extends Stack {
       oAuth: {
         flows: { authorizationCodeGrant: true },
         scopes: [cognito.OAuthScope.EMAIL, cognito.OAuthScope.OPENID, cognito.OAuthScope.PROFILE],
+        // Callback do Hosted UI: CloudFront do app + localhost p/ dev.
+        callbackUrls: [
+          `${props.appBaseUrl}/api/auth/callback`,
+          'http://localhost:3000/api/auth/callback',
+        ],
+        logoutUrls: [`${props.appBaseUrl}/`, 'http://localhost:3000/'],
       },
       preventUserExistenceErrors: true,
     });

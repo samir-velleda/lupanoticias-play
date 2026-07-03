@@ -15,11 +15,14 @@ import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 import { LupaEnv, resourceName, ssmPrefix } from './config';
 
 export interface LupaWebStackProps extends StackProps {
   readonly envName: LupaEnv;
+  /** Base URL pública do app (CloudFront/domínio) — usada no OAuth redirect_uri. */
+  readonly appBaseUrl: string;
   /** ARN da layer do AWS Lambda Web Adapter (x86_64). Override via -c lwaLayerArn=... */
   readonly lwaLayerArn?: string;
   /** Aliases do domínio custom (opcional). Override via -c webDomainNames=a.com,b.com */
@@ -61,6 +64,8 @@ export class LupaWebStack extends Stack {
     const appEnv: Record<string, string> = {
       LUPA_ENV: envName,
       NODE_ENV: 'production',
+      // Base URL pública (OAuth redirect_uri deve bater com os callbackUrls do Cognito).
+      LUPA_WEB_URL: props.appBaseUrl,
       // Guarda de origem: middleware barra (403) quem não trouxer este header do CloudFront.
       LUPA_ORIGIN_SECRET: originSecretValue,
       // AWS Lambda Web Adapter
@@ -99,6 +104,27 @@ export class LupaWebStack extends Stack {
       timeout: Duration.seconds(30),
       environment: appEnv,
     });
+
+    // Admin do Cognito (portal /admin/usuarios): listar/criar usuários e atribuir grupos,
+    // escopado ao User Pool do projeto. (Sem AdminDeleteUser — nada de deleção.)
+    const userPoolArn = Stack.of(this).formatArn({
+      service: 'cognito-idp',
+      resource: 'userpool',
+      resourceName: appEnv.LUPA_COGNITO_USER_POOL_ID,
+    });
+    fn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [
+          'cognito-idp:ListUsers',
+          'cognito-idp:ListGroups',
+          'cognito-idp:AdminGetUser',
+          'cognito-idp:AdminListGroupsForUser',
+          'cognito-idp:AdminCreateUser',
+          'cognito-idp:AdminAddUserToGroup',
+        ],
+        resources: [userPoolArn],
+      }),
+    );
 
     // Function URL pública (authType NONE) — o CloudFront é o ponto de entrada.
     // Nota: a Function URL fica acessível diretamente (aceitável p/ URL de TESTE dev).

@@ -31,6 +31,7 @@ import { createMockRepositories } from './mock';
 
 export interface Repositories {
   materias: {
+    getById(id: string): Promise<Materia | null>;
     getBySlug(editoria: EditoriaSlug, slug: string): Promise<Materia | null>;
     listByEditoria(editoria: EditoriaSlug, opts?: PageOpts): Promise<Paged<Materia>>;
     listMaisLidas(limit?: number): Promise<Materia[]>;
