@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { SESSION_COOKIE, STATE_COOKIE, getAuthConfig } from '@/lib/auth/config';
-import { trocarCodePorTokens } from '@/lib/auth/cognito';
+import { trocarCodePorTokens, gruposDoIdToken, destinoPorGrupos } from '@/lib/auth/cognito';
 
 /** Recebe o `code` do Cognito, valida o state, troca por tokens e cria a sessão. */
 export async function GET(req: Request) {
@@ -25,7 +25,9 @@ export async function GET(req: Request) {
     return NextResponse.redirect(new URL('/entrar?erro=token', base));
   }
 
-  const res = NextResponse.redirect(new URL('/', base));
+  // Redireciona por papel (admin/diretor → /admin; jornalista → /jornalista; senão home).
+  const destino = destinoPorGrupos(gruposDoIdToken(tokens.id_token));
+  const res = NextResponse.redirect(new URL(destino, base));
   res.cookies.set(SESSION_COOKIE, tokens.id_token, {
     httpOnly: true,
     secure: true,

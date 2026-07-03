@@ -29,6 +29,25 @@ export interface CognitoTokens {
   expires_in: number;
 }
 
+/** Lê `cognito:groups` do payload do id token (sem verificar — vem direto do Cognito via TLS). */
+export function gruposDoIdToken(idToken: string): string[] {
+  try {
+    const payload = idToken.split('.')[1];
+    const json = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    const g = (json as Record<string, unknown>)['cognito:groups'];
+    return Array.isArray(g) ? (g as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Destino pós-login por papel: admin/diretor → /admin; jornalista → /jornalista; senão home. */
+export function destinoPorGrupos(grupos: string[]): string {
+  if (grupos.includes('admin') || grupos.includes('diretor')) return '/admin';
+  if (grupos.includes('jornalista')) return '/jornalista';
+  return '/';
+}
+
 /** Troca o `code` por tokens (app client é público, sem secret). */
 export async function trocarCodePorTokens(code: string): Promise<CognitoTokens | null> {
   const c = getAuthConfig();

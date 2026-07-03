@@ -3,6 +3,7 @@ import { repositories } from '@/lib/data/repositories';
 import { LupaLockup } from '@/components/brand';
 import { LiveBadge } from '@/components/ui';
 import { HeaderNav, type NavItem } from './HeaderNav';
+import { MobileMenu } from './MobileMenu';
 
 const NAV_SLUGS = [
   'politica',
@@ -77,11 +78,7 @@ export async function Header() {
               <line x1="16" y1="16" x2="21" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </button>
-          <button type="button" aria-label="Menu" className="flex flex-col gap-1">
-            <span className="h-0.5 w-5 bg-ink" />
-            <span className="h-0.5 w-5 bg-ink" />
-            <span className="h-0.5 w-5 bg-ink" />
-          </button>
+          <MobileMenu items={navItems} />
         </div>
       </div>
 
