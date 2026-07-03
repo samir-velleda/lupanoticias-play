@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { repositories } from '@/lib/data/repositories';
-import { editoriaNome, isEditoriaSlug } from '@/lib/editorias';
+import { editoriaNome, isEditoriaSlug, EDITORIA_SLUGS } from '@/lib/editorias';
 import { formatRelativo } from '@/lib/format';
 import { Kicker, Pill, EmptyState } from '@/components/ui';
 import { Cover } from '@/components/media/Cover';
@@ -10,13 +10,17 @@ import { Cover } from '@/components/media/Cover';
 const PAGE_SIZE = 10;
 const SUBABAS = ['Tudo', 'Últimas', 'Em alta', 'Vídeos'];
 
-// Rota dinâmica (paginação via ?page=). Slug inválido → renderiza a página 404
-// (notFound). O status HTTP 404 "duro" para editoria inválida chega na fase
-// Aurora (prompt 06), quando a listagem vira SSG/ISR.
+// As editorias são uma união FIXA (não dependem do Aurora). Enumerá-las com
+// dynamicParams=false faz uma editoria inválida (ex.: /naoexiste) devolver um
+// 404 HTTP REAL (não soft-404), em vez de renderizar a página de erro com 200.
+// A paginação (?page=) continua via searchParams (render dinâmico por request).
+export const dynamicParams = false;
+export function generateStaticParams() {
+  return EDITORIA_SLUGS.map((editoria) => ({ editoria }));
+}
 
 interface Props {
   params: Promise<{ editoria: string }>;
-  searchParams: Promise<{ page?: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -29,12 +33,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function CategoriaPage({ params, searchParams }: Props) {
+export default async function CategoriaPage({ params }: Props) {
   const { editoria } = await params;
   if (!isEditoriaSlug(editoria)) notFound();
 
-  const { page: pageParam } = await searchParams;
-  const page = Math.max(1, Number(pageParam) || 1);
+  // Estático (SSG) → editoria inválida devolve 404 REAL. A paginação por ?page=
+  // (hoje inerte: nenhuma editoria passa de 1 página no mock) volta dinâmica com
+  // Aurora/ISR no prompt 06, junto do dynamicParams=true.
+  const page = 1;
 
   const [ed, paged] = await Promise.all([
     repositories.editorias.get(editoria),

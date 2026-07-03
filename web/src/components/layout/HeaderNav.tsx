@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { casaRota } from '@/lib/nav';
 
 export interface NavItem {
   href: string;
@@ -18,8 +19,9 @@ export function HeaderNav({ items }: { items: NavItem[] }) {
       className="flex h-[46px] items-center gap-5 overflow-x-auto border-t border-line px-5 sm:px-7"
     >
       {items.map((item) => {
-        const active =
-          item.href === '/' ? pathname === '/' : pathname === item.href;
+        // Início casa só na home; as seções (editorias, Vídeos) também acendem
+        // nas sub-páginas (ex.: /economia aceso em /economia/uma-materia).
+        const active = casaRota(pathname, item.href);
         return (
           <Link
             key={item.href}

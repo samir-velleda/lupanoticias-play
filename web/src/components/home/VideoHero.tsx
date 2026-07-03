@@ -28,9 +28,11 @@ export function VideoHero({
       >
         <Cover label={live.titulo} tone="dark" className="absolute inset-0 h-full w-full" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-black/25" />
-        <span className="absolute left-4 top-4">
-          <LiveBadge />
-        </span>
+        {live.tipo === 'live' ? (
+          <span className="absolute left-4 top-4">
+            <LiveBadge />
+          </span>
+        ) : null}
         <span className="absolute right-4 top-4 rounded-sm bg-ink/80 px-2 py-1 font-mono text-[11px] text-white">
           {live.tipo === 'live'
             ? 'AO VIVO'

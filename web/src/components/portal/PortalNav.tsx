@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { hrefAtivo } from '@/lib/nav';
 
 export interface PortalNavItem {
   href: string;
@@ -11,10 +12,14 @@ export interface PortalNavItem {
 /** Nav do portal (topbar escura) — item ativo em branco. */
 export function PortalNav({ items }: { items: PortalNavItem[] }) {
   const pathname = usePathname();
+  // Item ativo = prefixo correspondente MAIS LONGO. Evita que o item índice
+  // (ex.: /admin, /jornalista) fique aceso em toda sub-página, já que ele é
+  // prefixo de todas elas.
+  const ativoHref = hrefAtivo(pathname, items.map((it) => it.href));
   return (
     <nav className="flex items-center gap-1 overflow-x-auto" aria-label="Seções do portal">
       {items.map((item) => {
-        const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+        const active = item.href === ativoHref;
         return (
           <Link
             key={item.href}

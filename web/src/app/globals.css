@@ -36,4 +36,33 @@
     text-transform: uppercase;
     color: var(--lupa-gray-500);
   }
+
+  /* Knob do scrubber do player (trilho vem do gradiente inline). DESIGN_SPEC M3. */
+  .lupa-scrubber::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 13px;
+    height: 13px;
+    border-radius: var(--lupa-radius-pill);
+    background: #fff;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+  }
+  .lupa-scrubber::-moz-range-thumb {
+    width: 13px;
+    height: 13px;
+    border: none;
+    border-radius: var(--lupa-radius-pill);
+    background: #fff;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+  }
+  .lupa-scrubber::-moz-range-track {
+    background: transparent;
+  }
+  /* Foco visível no escuro do player (o outline global é preto → baixo contraste). */
+  .lupa-scrubber:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+  }
 }
