@@ -14,6 +14,7 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 import { LupaEnv, resourceName, ssmPrefix } from './config';
 
@@ -48,9 +49,20 @@ export class LupaWebStack extends Stack {
       webStaticBucketName,
     );
 
+    // Segredo compartilhado CloudFront->Lambda (endurecimento da origem — CLAUDE.md §0).
+    // O CloudFront injeta como header `x-lupa-origin`; o middleware Next valida.
+    const originSecret = new secretsmanager.Secret(this, 'OriginSecret', {
+      secretName: resourceName('web-origin', envName),
+      description: 'Segredo do header CloudFront->Lambda (guarda de origem do web).',
+      generateSecretString: { passwordLength: 40, excludePunctuation: true, includeSpace: false },
+    });
+    const originSecretValue = originSecret.secretValue.unsafeUnwrap();
+
     const appEnv: Record<string, string> = {
       LUPA_ENV: envName,
       NODE_ENV: 'production',
+      // Guarda de origem: middleware barra (403) quem não trouxer este header do CloudFront.
+      LUPA_ORIGIN_SECRET: originSecretValue,
       // AWS Lambda Web Adapter
       AWS_LAMBDA_EXEC_WRAPPER: '/opt/bootstrap',
       PORT: '8080',
@@ -94,7 +106,11 @@ export class LupaWebStack extends Stack {
     const fnUrl = fn.addFunctionUrl({ authType: lambda.FunctionUrlAuthType.NONE });
 
     // --- CloudFront ---
-    const origin = new origins.FunctionUrlOrigin(fnUrl);
+    // customHeaders: injeta o segredo de origem em TODA requisição ao Lambda (CloudFront
+    // sobrescreve qualquer x-lupa-origin vindo do viewer → não é spoofável via CDN).
+    const origin = new origins.FunctionUrlOrigin(fnUrl, {
+      customHeaders: { 'x-lupa-origin': originSecretValue },
+    });
     // OAC + Lambda Function URL: NÃO encaminhar o header `Authorization` (o CloudFront
     // o usa para a assinatura SigV4 do OAC). Encaminhar tudo, exceto Host e Authorization.
     const originRequestPolicy = new cloudfront.OriginRequestPolicy(this, 'WebOrp', {
