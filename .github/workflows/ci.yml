@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  web:
+    name: Web (lint · tsc · test · build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install (workspaces)
+        run: npm ci
+      - name: Lint
+        run: npm --workspace web run lint
+      - name: Typecheck
+        run: npm --workspace web run typecheck
+      - name: Test
+        run: npm --workspace web run test
+      - name: Build
+        run: npm --workspace web run build
+
+  infra:
+    name: Infra (synth + guarda-corpo de isolamento Lupa*)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install (workspaces)
+        run: npm ci
+      - name: Synth (dev)
+        working-directory: infra
+        run: npx cdk synth 'Lupa*-dev' --quiet
+      # GUARDA-CORPO (CLAUDE.md §0 / GIT_CICD §3): aborta se qualquer stack sintetizada
+      # NÃO começar com o prefixo `Lupa`. Roda offline (sem credenciais AWS).
+      - name: Guarda-corpo — só stacks Lupa*
+        working-directory: infra
+        run: |
+          npx cdk list > cdk-stacks.txt 2>/dev/null
+          echo "Stacks sintetizadas:"; cat cdk-stacks.txt
+          if grep -vqE '^Lupa' cdk-stacks.txt; then
+            echo "ABORT: stack fora do prefixo Lupa detectada — isolamento violado."
+            grep -vE '^Lupa' cdk-stacks.txt
+            exit 1
+          fi
+          echo "OK: todas as stacks têm prefixo Lupa."

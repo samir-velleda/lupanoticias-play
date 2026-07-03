@@ -1,0 +1,23 @@
+{
+  "name": "lupa-noticias-play",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Portal Lupa Notícias — web (Next) + infra (AWS CDK) + mobile (Capacitor). Monorepo npm workspaces.",
+  "workspaces": [
+    "web",
+    "infra",
+    "mobile"
+  ],
+  "scripts": {
+    "dev": "npm --workspace web run dev",
+    "build": "npm --workspace web run build",
+    "lint": "npm --workspace web run lint",
+    "typecheck": "npm --workspace web run typecheck",
+    "test": "npm --workspace web run test",
+    "synth": "npm --workspace infra run synth",
+    "diff": "npm --workspace infra run diff"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

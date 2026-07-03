@@ -1,0 +1,46 @@
+# Deploy DEV (esqueleto) — disparado por push em `develop`.
+# Desligado por ora (needs OIDC role `lupa-deploy-role` — ver GIT_CICD §3).
+# Habilitar removendo o `if: false` e configurando o role OIDC (escopo mínimo, só lupa-*).
+name: Deploy dev
+
+on:
+  push:
+    branches: [develop]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: cdk deploy Lupa*-dev
+    runs-on: ubuntu-latest
+    if: ${{ false }} # habilitar quando o OIDC role estiver configurado
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install
+        run: npm ci
+      # Credenciais AWS via OIDC (sem chaves estáticas no repo).
+      # - uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     role-to-assume: arn:aws:iam::<ACCOUNT>:role/lupa-deploy-role
+      #     aws-region: us-east-1
+      - name: Package web (Next standalone + LWA)
+        run: bash infra/scripts/package-web.sh
+      # GUARDA-CORPO OBRIGATÓRIO (GIT_CICD §3): aborta se o diff tocar stack não-Lupa.
+      - name: cdk diff (guarda-corpo)
+        working-directory: infra
+        run: |
+          npx cdk diff 'Lupa*-dev' > cdk.diff 2>&1 || true
+          cat cdk.diff
+          if grep -E '^Stack ' cdk.diff | grep -qv '^Stack Lupa'; then
+            echo "ABORT: diff toca stack fora do escopo Lupa"; exit 1
+          fi
+      - name: cdk deploy (aditivo, só Lupa*-dev)
+        working-directory: infra
+        run: npx cdk deploy 'Lupa*-dev' --require-approval never
+      # NUNCA `cdk destroy` em CI.

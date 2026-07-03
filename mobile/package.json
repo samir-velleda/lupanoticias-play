@@ -1,0 +1,6 @@
+{
+  "name": "@lupa/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "description": "App iOS/Android (Capacitor, modo remote) — implementado no prompt 09 / Bloco 8."
+}
