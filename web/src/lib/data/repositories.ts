@@ -28,6 +28,8 @@ import type {
   RelatorioResultado,
 } from '@/types';
 import { createMockRepositories } from './mock';
+import { createAuroraRepositories } from './aurora';
+import { auroraConfigurada } from './db';
 
 export interface Repositories {
   materias: {
@@ -89,7 +91,10 @@ export interface Repositories {
 }
 
 /**
- * Singleton de dados usado por toda a UI. Hoje = mock; a troca para Aurora acontece
- * aqui (uma linha), sem tocar em nenhum componente.
+ * Singleton de dados usado por toda a UI. Se o Aurora está configurado (Lambda
+ * deployado com secret+endpoint), usa a implementação real; senão (dev local, build)
+ * cai no mock. A troca é SÓ aqui — nenhum componente muda.
  */
-export const repositories: Repositories = createMockRepositories();
+export const repositories: Repositories = auroraConfigurada()
+  ? createAuroraRepositories()
+  : createMockRepositories();
