@@ -91,10 +91,16 @@ export interface Repositories {
 }
 
 /**
- * Singleton de dados usado por toda a UI. Se o Aurora está configurado (Lambda
- * deployado com secret+endpoint), usa a implementação real; senão (dev local, build)
- * cai no mock. A troca é SÓ aqui — nenhum componente muda.
+ * Singleton de dados usado por toda a UI. A troca é SÓ aqui — nenhum componente muda.
+ *
+ * Usa Aurora somente quando (a) está configurado (secret+endpoint) E (b) o opt-in
+ * explícito `LUPA_USE_AURORA=true` está ligado. O opt-in só é ativado DEPOIS do
+ * bootstrap (schema+seed), evitando qualquer janela em que o Lambda já tenta o banco
+ * mas as tabelas ainda não existem. Sem o flag (dev local, build, e o deploy que
+ * entra na VPC antes do seed) → mock.
  */
-export const repositories: Repositories = auroraConfigurada()
+const usarAurora = auroraConfigurada() && process.env.LUPA_USE_AURORA === 'true';
+
+export const repositories: Repositories = usarAurora
   ? createAuroraRepositories()
   : createMockRepositories();

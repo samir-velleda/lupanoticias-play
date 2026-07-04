@@ -7,6 +7,7 @@
  */
 import * as path from 'path';
 import { Stack, StackProps, Duration, CfnOutput } from 'aws-cdk-lib';
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
@@ -52,6 +53,18 @@ export class LupaWebStack extends Stack {
       webStaticBucketName,
     );
 
+    // VPC + SG do projeto por LOOKUP (sem acoplar/alterar a LupaNetwork). O Lambda
+    // entra nas subnets `app` (PRIVATE_WITH_EGRESS) usando o app-sg, que é o único
+    // autorizado a falar 5432 com o Aurora (db-sg). Egress via NAT alcança
+    // Secrets Manager/Cognito.
+    const vpc = ec2.Vpc.fromLookup(this, 'Vpc', { vpcName: resourceName('vpc', envName) });
+    const appSg = ec2.SecurityGroup.fromLookupByName(
+      this,
+      'AppSg',
+      resourceName('app-sg', envName),
+      vpc,
+    );
+
     // Segredo compartilhado CloudFront->Lambda (endurecimento da origem — CLAUDE.md §0).
     // O CloudFront injeta como header `x-lupa-origin`; o middleware Next valida.
     const originSecret = new secretsmanager.Secret(this, 'OriginSecret', {
@@ -68,6 +81,9 @@ export class LupaWebStack extends Stack {
       LUPA_WEB_URL: props.appBaseUrl,
       // Guarda de origem: middleware barra (403) quem não trouxer este header do CloudFront.
       LUPA_ORIGIN_SECRET: originSecretValue,
+      // Aurora LIGADO (banco já com schema+seed). A UI lê/escreve no Aurora.
+      LUPA_USE_AURORA: 'true',
+      LUPA_AURORA_DB_NAME: 'lupa',
       // AWS Lambda Web Adapter
       AWS_LAMBDA_EXEC_WRAPPER: '/opt/bootstrap',
       PORT: '8080',
@@ -103,7 +119,19 @@ export class LupaWebStack extends Stack {
       memorySize: 1024,
       timeout: Duration.seconds(30),
       environment: appEnv,
+      // Entra na VPC (subnets app) p/ alcançar o Aurora isolado via app-sg.
+      vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [appSg],
     });
+
+    // Ler as credenciais do Aurora em runtime (nunca em env texto-claro).
+    fn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['secretsmanager:GetSecretValue'],
+        resources: [appEnv.LUPA_AURORA_SECRET_ARN],
+      }),
+    );
 
     // Admin do Cognito (portal /admin/usuarios): listar/criar usuários e atribuir grupos,
     // escopado ao User Pool do projeto. (Sem AdminDeleteUser — nada de deleção.)

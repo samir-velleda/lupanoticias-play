@@ -46,7 +46,16 @@ export async function salvarMateria(payload: SalvarMateriaPayload): Promise<void
     : await repositories.materias.criar(input);
 
   if (payload.enviar) {
-    await repositories.materias.enviarParaRevisao(materia.id);
+    const enviada = await repositories.materias.enviarParaRevisao(materia.id);
+    if (enviada.status === 'publicada') {
+      // Modo automático publicou direto → aparece no site na hora.
+      revalidatePath('/');
+      revalidatePath(`/${enviada.editoria}`);
+      revalidatePath(`/${enviada.editoria}/${enviada.slug}`);
+    }
+    // Nova pendente entra na fila do Diretor.
+    revalidatePath('/admin/redacao');
+    revalidatePath('/admin');
   }
 
   revalidatePath('/jornalista');

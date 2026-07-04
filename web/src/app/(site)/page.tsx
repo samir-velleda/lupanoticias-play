@@ -11,6 +11,10 @@ import { LupaPlayBand, type PlayBandData } from '@/components/home/LupaPlayBand'
 
 const GRID_EDITORIAS: EditoriaSlug[] = ['economia', 'mundo', 'esportes', 'cultura'];
 
+// ISR: a home revalida a cada 30s p/ pegar matérias novas publicadas no Aurora
+// (além do revalidatePath('/') disparado na publicação).
+export const revalidate = 30;
+
 export default async function HomePage() {
   const [live, shelf, maisLidas, opiniao, videos, podcasts, cortes, gridRaw] =
     await Promise.all([

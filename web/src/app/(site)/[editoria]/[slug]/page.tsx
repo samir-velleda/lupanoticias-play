@@ -13,9 +13,11 @@ interface Props {
   params: Promise<{ editoria: string; slug: string }>;
 }
 
-// Enumera as matérias publicadas (editoria+slug). Slug fora da lista → 404 real.
-// (Na fase Aurora, prompt 06, vira dynamicParams=true + revalidação/ISR.)
-export const dynamicParams = false;
+// Aurora/ISR: pré-renderiza as matérias conhecidas e revalida a cada 30s; slug NOVO
+// (criado pelo jornalista) renderiza sob demanda (dynamicParams=true) → roteável na hora.
+// Editoria/slug inexistente → carregar() devolve null → notFound() → 404 real.
+export const dynamicParams = true;
+export const revalidate = 30;
 export async function generateStaticParams() {
   const listas = await Promise.all(
     EDITORIA_SLUGS.map((editoria) =>

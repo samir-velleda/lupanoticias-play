@@ -10,11 +10,11 @@ import { Cover } from '@/components/media/Cover';
 const PAGE_SIZE = 10;
 const SUBABAS = ['Tudo', 'Últimas', 'Em alta', 'Vídeos'];
 
-// As editorias são uma união FIXA (não dependem do Aurora). Enumerá-las com
-// dynamicParams=false faz uma editoria inválida (ex.: /naoexiste) devolver um
-// 404 HTTP REAL (não soft-404), em vez de renderizar a página de erro com 200.
-// A paginação (?page=) continua via searchParams (render dinâmico por request).
+// As editorias são uma união FIXA. dynamicParams=false + esta lista faz editoria
+// inválida (/naoexiste) devolver 404 HTTP REAL (não soft-404). revalidate (ISR) faz
+// a listagem pegar matérias novas do Aurora sem rebuild — mantendo o 404 real.
 export const dynamicParams = false;
+export const revalidate = 30;
 export function generateStaticParams() {
   return EDITORIA_SLUGS.map((editoria) => ({ editoria }));
 }
