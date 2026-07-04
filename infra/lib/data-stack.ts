@@ -46,9 +46,13 @@ export class LupaDataStack extends Stack {
       }),
       storageEncrypted: true,
       backup: { retention: Duration.days(prod ? 14 : 7) },
-      deletionProtection: prod,
-      // Aditivo: em prod nunca destrói; em dev tira snapshot ao remover.
-      removalPolicy: prod ? RemovalPolicy.RETAIN : RemovalPolicy.SNAPSHOT,
+      // Proteção MÁXIMA em todos os ambientes (CLAUDE.md §0):
+      // - deletionProtection: o cluster não pode ser deletado sem desligar isto antes.
+      // - RETAIN: se a stack for destruída, o banco PERMANECE (nunca é apagado).
+      //   RETAIN é mais forte que SNAPSHOT (não deleta x deleta-com-backup); a rede
+      //   de recuperação são os backups automáticos (>=7d) + a trava de deletion.
+      deletionProtection: true,
+      removalPolicy: RemovalPolicy.RETAIN,
     });
 
     // Publica referências p/ os próximos prompts (SSM + CfnOutput).
