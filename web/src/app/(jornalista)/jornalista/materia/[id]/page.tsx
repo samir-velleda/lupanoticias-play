@@ -4,6 +4,7 @@ import { repositories } from '@/lib/data/repositories';
 import { getUsuarioAtual } from '@/lib/auth/session';
 import { autorIdDoUsuario } from '@/lib/auth/perfil';
 import { podeEditar } from '@/lib/domain/materia';
+import { reabrirParaCorrecao } from '@/lib/actions/materias';
 import { MateriaEditor } from '@/components/portal/MateriaEditor';
 import { StatusBadge } from '@/components/portal/StatusBadge';
 
@@ -46,14 +47,34 @@ export default async function EditarMateria({
           <div className="rounded-lg border border-line bg-surface-2 p-5">
             <h2 className="font-display text-lg font-bold text-ink">{materia.titulo}</h2>
             <p className="mt-2 font-serif text-[15px] leading-relaxed text-gray-500">
-              Esta matéria está <strong>{materia.status}</strong> e não pode ser editada
-              diretamente. Alterações em conteúdo publicado passam pela Direção de Redação.
+              {materia.status === 'publicada' ? (
+                <>
+                  Matéria publicada. Para alterá-la, <strong>reabra para correção</strong>: sua
+                  edição vira um rascunho que passa pela Direção — a versão no ar só muda quando
+                  a correção é aprovada.
+                </>
+              ) : (
+                <>
+                  Esta matéria está <strong>{materia.status}</strong> e não pode ser editada
+                  diretamente.
+                </>
+              )}
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
+            {materia.status === 'publicada' ? (
+              <form action={reabrirParaCorrecao.bind(null, materia.id)}>
+                <button
+                  type="submit"
+                  className="rounded bg-ink px-4 py-2 font-display text-sm font-bold text-white hover:opacity-90"
+                >
+                  Reabrir para correção
+                </button>
+              </form>
+            ) : null}
             <Link
               href="/jornalista"
-              className="rounded bg-ink px-4 py-2 font-display text-sm font-bold text-white"
+              className="rounded border border-line px-4 py-2 font-display text-sm font-semibold text-ink hover:border-ink"
             >
               ← Minhas matérias
             </Link>

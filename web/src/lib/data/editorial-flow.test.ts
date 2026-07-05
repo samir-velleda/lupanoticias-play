@@ -64,3 +64,51 @@ describe('máquina de estados editorial', () => {
     await expect(repo.materias.recusar(m.id, 'rev-1', 'tarde demais')).rejects.toThrow(/pendentes/i);
   });
 });
+
+describe('correção de matéria publicada (reabrir sem despublicar)', () => {
+  async function publicar() {
+    const m = await repo.materias.criar(baseInput());
+    await repo.materias.enviarParaRevisao(m.id);
+    return repo.materias.aprovar(m.id, 'rev-1'); // → publicada
+  }
+
+  it('a origem segue publicada e inalterada até a correção ser aprovada; então recebe o novo conteúdo (mesmo slug)', async () => {
+    const origem = await publicar();
+    const tituloOriginal = origem.titulo;
+
+    const draft = await repo.materias.reabrirParaCorrecao(origem.id, 'a-2');
+    expect(draft.status).toBe('rascunho');
+    expect(draft.id).not.toBe(origem.id);
+
+    // durante a correção: origem intocada e no ar
+    await repo.materias.atualizar(draft.id, {
+      titulo: 'Título corrigido',
+      corpo: [{ type: 'paragraph', text: 'texto corrigido' }],
+    });
+    await repo.materias.enviarParaRevisao(draft.id); // → pendente
+    const origemDurante = await repo.materias.getById(origem.id);
+    expect(origemDurante?.status).toBe('publicada');
+    expect(origemDurante?.titulo).toBe(tituloOriginal);
+
+    // aprovar a correção aplica na ORIGEM (mesmo id/slug, segue publicada); draft arquivado
+    const aplicada = await repo.materias.aprovar(draft.id, 'rev-9');
+    expect(aplicada.id).toBe(origem.id);
+    expect(aplicada.status).toBe('publicada');
+    expect(aplicada.slug).toBe(origem.slug);
+    expect(aplicada.titulo).toBe('Título corrigido');
+    const draftDepois = await repo.materias.getById(draft.id);
+    expect(draftDepois?.status).toBe('arquivada');
+  });
+
+  it('só publicada pode ser reaberta para correção', async () => {
+    const rascunho = await repo.materias.criar(baseInput());
+    await expect(repo.materias.reabrirParaCorrecao(rascunho.id, 'a-2')).rejects.toThrow(/publicadas/i);
+  });
+
+  it('reusa o rascunho de correção aberto (não duplica)', async () => {
+    const origem = await publicar();
+    const d1 = await repo.materias.reabrirParaCorrecao(origem.id, 'a-2');
+    const d2 = await repo.materias.reabrirParaCorrecao(origem.id, 'a-2');
+    expect(d2.id).toBe(d1.id);
+  });
+});

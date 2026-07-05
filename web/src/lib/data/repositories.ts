@@ -50,6 +50,13 @@ export interface Repositories {
     aprovar(id: string, revisorId: string, agendadoPara?: string): Promise<Materia>;
     recusar(id: string, revisorId: string, justificativa: string): Promise<Materia>;
     listRevisoes(materiaId: string): Promise<RevisaoMateria[]>;
+    /**
+     * Abre um rascunho de correção de uma matéria PUBLICADA (copia o conteúdo).
+     * A origem permanece publicada/no ar; o draft passa pelo fluxo de revisão e, ao
+     * ser aprovado, seu conteúdo é aplicado na origem (que nunca é despublicada).
+     * Reusa um draft aberto se já existir. Retorna o draft.
+     */
+    reabrirParaCorrecao(origemId: string, autorId: string): Promise<Materia>;
   };
   pautas: {
     listAbertas(autorId?: string): Promise<Pauta[]>;

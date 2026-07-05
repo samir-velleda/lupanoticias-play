@@ -86,3 +86,22 @@ export async function salvarMateria(payload: SalvarMateriaPayload): Promise<void
   revalidatePath('/jornalista/correcoes');
   redirect('/jornalista');
 }
+
+/**
+ * Abre (ou reusa) um rascunho de correção de uma matéria PUBLICADA e leva o autor ao
+ * editor. A versão no ar não muda: a correção passa pelo fluxo de revisão e só é aplicada
+ * na origem quando aprovada. Mantém a trava de ownership (não corrige matéria alheia).
+ */
+export async function reabrirParaCorrecao(origemId: string): Promise<void> {
+  const usuario = await exigirGrupo('jornalista', 'diretor');
+  const origem = await repositories.materias.getById(origemId);
+  if (!origem) throw new Error('Matéria não encontrada.');
+  const autorId = autorIdDoUsuario(usuario);
+  const dono = origem.autores.some((a) => a.id === autorId);
+  if (!dono && !usuario.grupos.includes('admin')) {
+    throw new Error('Você só pode corrigir as suas próprias matérias.');
+  }
+  const draft = await repositories.materias.reabrirParaCorrecao(origemId, autorId);
+  revalidatePath('/jornalista');
+  redirect(`/jornalista/materia/${draft.id}`);
+}

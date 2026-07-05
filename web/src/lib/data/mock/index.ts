@@ -43,6 +43,7 @@ import {
   erroNaoEditavel,
   podeEditar,
   podeEnviarParaRevisao,
+  podeReabrirParaCorrecao,
   podeRevisar,
 } from '@/lib/domain/materia';
 
@@ -54,6 +55,7 @@ const _modo: ModoAutomatico[] = modoAutomatico.map((m) => ({ ...m }));
 const _campanhas: AdCampaign[] = adCampaigns.map((c) => ({ ...c }));
 const _criativos: AdCreative[] = adCreatives.map((c) => ({ ...c }));
 const _revisoes: RevisaoMateria[] = [];
+const _correcoes: { draftId: string; origemId: string }[] = [];
 const _eventos: Omit<EventoAnalytics, 'id' | 'criadoEm'>[] = [];
 
 let _seq = 1000;
@@ -206,6 +208,31 @@ export function createMockRepositories(): Repositories {
         if (!podeRevisar(m.status)) {
           throw new Error('Só matérias pendentes podem ser aprovadas.');
         }
+        // Correção de publicada: aplica o conteúdo do draft na ORIGEM (que segue no ar),
+        // arquiva o draft e registra a revisão na origem. A origem nunca é despublicada
+        // nem muda de slug (URL preservada).
+        const link = _correcoes.find((c) => c.draftId === id);
+        if (link) {
+          const origem = _materias.find((x) => x.id === link.origemId);
+          if (!origem) throw new Error('Matéria de origem da correção não encontrada.');
+          origem.titulo = m.titulo;
+          origem.standfirst = m.standfirst;
+          origem.corpo = m.corpo;
+          origem.tags = m.tags;
+          origem.heroImageUrl = m.heroImageUrl;
+          origem.heroCaption = m.heroCaption;
+          origem.updatedAt = agora();
+          m.status = 'arquivada';
+          m.updatedAt = agora();
+          _revisoes.push({
+            id: nextId('rev'),
+            materiaId: origem.id,
+            revisorId,
+            decisao: 'aprovada',
+            criadoEm: agora(),
+          });
+          return clone(origem);
+        }
         if (agendadoPara) {
           m.status = 'aprovada';
           m.agendadoPara = agendadoPara;
@@ -246,6 +273,44 @@ export function createMockRepositories(): Repositories {
       },
       async listRevisoes(materiaId: string) {
         return clone(_revisoes.filter((r) => r.materiaId === materiaId));
+      },
+      async reabrirParaCorrecao(origemId: string, autorId: string) {
+        const origem = _materias.find((x) => x.id === origemId);
+        if (!origem) throw new Error(`Matéria ${origemId} não encontrada`);
+        if (!podeReabrirParaCorrecao(origem.status)) {
+          throw new Error('Só matérias publicadas podem ser reabertas para correção.');
+        }
+        // Reusa um draft de correção AINDA ABERTO (não arquivado) da mesma origem.
+        const abertoLink = _correcoes.find((c) => {
+          if (c.origemId !== origemId) return false;
+          const d = _materias.find((x) => x.id === c.draftId);
+          return !!d && d.status !== 'arquivada';
+        });
+        if (abertoLink) {
+          const d = _materias.find((x) => x.id === abertoLink.draftId)!;
+          return clone(d);
+        }
+        const autor: Author = authors.find((a) => a.id === autorId) ?? origem.autores[0] ?? authors[0];
+        const id = nextId('m');
+        const draft: Materia = {
+          id,
+          slug: `${slugify(origem.titulo)}-corr-${id}`,
+          editoria: origem.editoria,
+          titulo: origem.titulo,
+          standfirst: origem.standfirst,
+          corpo: origem.corpo.map((b) => ({ ...b })),
+          autores: [autor],
+          heroImageUrl: origem.heroImageUrl,
+          heroCaption: origem.heroCaption,
+          tags: [...origem.tags],
+          status: 'rascunho',
+          updatedAt: agora(),
+          views: 0,
+          cliques: 0,
+        };
+        _materias.push(draft);
+        _correcoes.push({ draftId: id, origemId });
+        return clone(draft);
       },
     },
 

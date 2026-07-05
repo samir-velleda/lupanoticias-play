@@ -24,8 +24,14 @@ import type {
   RevisaoMateria,
   StatusMateria,
 } from '@/types';
-import { q, tx } from '../db';
-import { erroNaoEditavel, podeEditar, podeEnviarParaRevisao } from '@/lib/domain/materia';
+import { q, tx, exec } from '../db';
+import {
+  erroNaoEditavel,
+  podeEditar,
+  podeEnviarParaRevisao,
+  podeReabrirParaCorrecao,
+  podeRevisar,
+} from '@/lib/domain/materia';
 import {
   mapAdCampaign,
   mapAdCreative,
@@ -96,6 +102,27 @@ async function slugUnico(editoria: EditoriaSlug, base: string, excetoId?: string
     if (rows.length === 0) return cand;
   }
   return `${raiz}-${randomUUID().slice(0, 8)}`;
+}
+
+// Migration 002 (aditiva) aplicada de forma PREGUIÇOSA e idempotente — só no caminho de
+// correção, nunca nas queries públicas/normais. CREATE ... IF NOT EXISTS: seguro para
+// re-executar; não dropa nada. Cacheado por instância de Lambda.
+let _correcaoSchema: Promise<void> | null = null;
+function ensureCorrecaoSchema(): Promise<void> {
+  if (!_correcaoSchema) {
+    _correcaoSchema = exec(`
+      CREATE TABLE IF NOT EXISTS materia_correcao (
+        draft_id  TEXT PRIMARY KEY REFERENCES materia(id) ON DELETE CASCADE,
+        origem_id TEXT NOT NULL REFERENCES materia(id) ON DELETE CASCADE,
+        criado_em TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_materia_correcao_origem ON materia_correcao (origem_id);
+    `).catch((e) => {
+      _correcaoSchema = null; // permite retry no próximo uso
+      throw e;
+    });
+  }
+  return _correcaoSchema;
 }
 
 export function createAuroraRepositories(): Repositories {
@@ -274,6 +301,41 @@ export function createAuroraRepositories(): Repositories {
         return (await getMateriaById(id))!;
       },
       async aprovar(id: string, revisorId: string, agendadoPara?: string) {
+        await ensureCorrecaoSchema();
+        // Draft de correção? aplica o conteúdo na ORIGEM (que segue publicada/no ar,
+        // mesmo id e slug → URL preservada), arquiva o draft, registra revisão na origem.
+        const linkRows = await q<Row>(
+          `SELECT origem_id FROM materia_correcao WHERE draft_id = $1`,
+          [id],
+        );
+        if (linkRows[0]) {
+          const draft = await getMateriaById(id);
+          if (!draft) throw new Error(`Matéria ${id} não encontrada`);
+          if (!podeRevisar(draft.status)) {
+            throw new Error('Só matérias pendentes podem ser aprovadas.');
+          }
+          const origemId = String(linkRows[0].origem_id);
+          await tx(async (c) => {
+            await c.query(
+              `UPDATE materia SET titulo=$2, standfirst=$3, corpo=$4::jsonb, tags=$5,
+                 hero_image_url=$6, hero_caption=$7, updated_at=now()
+               WHERE id=$1`,
+              [
+                origemId, draft.titulo, draft.standfirst, JSON.stringify(draft.corpo),
+                draft.tags, draft.heroImageUrl ?? null, draft.heroCaption ?? null,
+              ],
+            );
+            await c.query(`UPDATE materia SET status='arquivada', updated_at=now() WHERE id=$1`, [id]);
+            await c.query(
+              `INSERT INTO revisao_materia (id, materia_id, revisor_id, decisao, criado_em)
+               VALUES ($1,$2,$3,'aprovada', now())`,
+              [nid('rev'), origemId, revisorId],
+            );
+          });
+          const origem = await getMateriaById(origemId);
+          if (!origem) throw new Error('Matéria de origem da correção não encontrada.');
+          return origem;
+        }
         const sql = agendadoPara
           ? `UPDATE materia SET status='aprovada', agendado_para=$2, updated_at=now()
              WHERE id=$1 AND status='pendente' RETURNING id`
@@ -324,6 +386,51 @@ export function createAuroraRepositories(): Repositories {
           [materiaId],
         );
         return rows.map(mapRevisao) as RevisaoMateria[];
+      },
+      async reabrirParaCorrecao(origemId: string, autorId: string) {
+        await ensureCorrecaoSchema();
+        const origem = await getMateriaById(origemId);
+        if (!origem) throw new Error(`Matéria ${origemId} não encontrada`);
+        if (!podeReabrirParaCorrecao(origem.status)) {
+          throw new Error('Só matérias publicadas podem ser reabertas para correção.');
+        }
+        // Reusa um draft de correção AINDA ABERTO (não arquivado) da mesma origem.
+        const abertos = await q<Row>(
+          `SELECT mc.draft_id FROM materia_correcao mc
+           JOIN materia d ON d.id = mc.draft_id
+           WHERE mc.origem_id = $1 AND d.status <> 'arquivada'
+           ORDER BY mc.criado_em DESC LIMIT 1`,
+          [origemId],
+        );
+        if (abertos[0]) {
+          const existente = await getMateriaById(String(abertos[0].draft_id));
+          if (existente) return existente;
+        }
+        const id = nid('m');
+        // slug interno único (nunca servido: draft não é 'publicada').
+        const slug = await slugUnico(origem.editoria, `${origem.titulo} correcao ${id}`);
+        return tx(async (c) => {
+          await c.query(
+            `INSERT INTO materia (id, slug, editoria, titulo, standfirst, corpo, hero_image_url,
+               hero_caption, tags, status, updated_at, views, cliques)
+             VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,'rascunho', now(), 0, 0)`,
+            [
+              id, slug, origem.editoria, origem.titulo, origem.standfirst,
+              JSON.stringify(origem.corpo ?? []), origem.heroImageUrl ?? null,
+              origem.heroCaption ?? null, origem.tags,
+            ],
+          );
+          await c.query(
+            `INSERT INTO materia_autor (materia_id, author_id, ordem) VALUES ($1,$2,0)`,
+            [id, autorId],
+          );
+          await c.query(
+            `INSERT INTO materia_correcao (draft_id, origem_id) VALUES ($1,$2)`,
+            [id, origemId],
+          );
+          const rows = (await c.query(`${MAT_SELECT} WHERE m.id = $1`, [id])).rows as Row[];
+          return mapMateria(rows[0]);
+        });
       },
     },
 

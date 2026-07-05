@@ -34,6 +34,15 @@ export function podeRevisar(status: StatusMateria): boolean {
   return status === 'pendente';
 }
 
+/**
+ * Correção de matéria publicada: só se pode "reabrir para correção" uma PUBLICADA.
+ * A edição vai para um rascunho de correção (que passa pelo fluxo de revisão);
+ * a versão no ar não muda até a correção ser aprovada. Ver [[reabrir-correcao]].
+ */
+export function podeReabrirParaCorrecao(status: StatusMateria): boolean {
+  return status === 'publicada';
+}
+
 /** Mensagem padrão quando uma edição é barrada por estado não-editável. */
 export function erroNaoEditavel(status: StatusMateria): string {
   return `Matéria em estado "${status}" não pode ser editada diretamente. Alterações em conteúdo publicado passam pela Direção de Redação.`;

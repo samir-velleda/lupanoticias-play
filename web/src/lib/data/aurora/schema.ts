@@ -79,6 +79,17 @@ CREATE TABLE IF NOT EXISTS revisao_materia (
 );
 CREATE INDEX IF NOT EXISTS idx_revisao_materia ON revisao_materia (materia_id, criado_em DESC);
 
+-- Migration 002 (aditiva): correção de matéria PUBLICADA sem despublicar.
+-- Liga um rascunho de correção (draft) à matéria de origem publicada. A origem
+-- permanece 'publicada'/no ar; ao APROVAR o draft, o conteúdo é aplicado na origem
+-- e o draft é arquivado. Criada de forma idempotente pelo caminho de correção.
+CREATE TABLE IF NOT EXISTS materia_correcao (
+  draft_id  TEXT PRIMARY KEY REFERENCES materia(id) ON DELETE CASCADE,
+  origem_id TEXT NOT NULL REFERENCES materia(id) ON DELETE CASCADE,
+  criado_em TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_materia_correcao_origem ON materia_correcao (origem_id);
+
 CREATE TABLE IF NOT EXISTS modo_automatico (
   categoria   TEXT PRIMARY KEY REFERENCES editoria(slug),
   ativo       BOOLEAN NOT NULL DEFAULT false,
