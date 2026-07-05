@@ -44,6 +44,9 @@ export class LupaStorageStack extends Stack {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       enforceSSL: true,
       removalPolicy,
+      // EventBridge: publica s3:ObjectCreated p/ o pipeline de vídeo (LupaMedia disparar
+      // o MediaConvert). Só habilita a notificação — não recria o bucket nem toca dados.
+      eventBridgeEnabled: true,
       cors: [
         {
           allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.POST, s3.HttpMethods.GET],

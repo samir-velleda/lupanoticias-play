@@ -1,0 +1,10 @@
+{
+  "name": "lupa-mc-submit",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "Cria job MediaConvert (HLS + poster) a partir de s3:ObjectCreated.",
+  "dependencies": {
+    "@aws-sdk/client-mediaconvert": "^3.700.0"
+  }
+}

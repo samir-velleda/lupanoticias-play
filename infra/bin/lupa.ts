@@ -13,6 +13,7 @@ import { LupaDataStack } from '../lib/data-stack';
 import { LupaStorageStack } from '../lib/storage-stack';
 import { LupaAuthStack } from '../lib/auth-stack';
 import { LupaWebStack } from '../lib/web-stack';
+import { LupaMediaStack } from '../lib/media-stack';
 
 const app = new App();
 
@@ -72,6 +73,14 @@ new LupaWebStack(app, stackName('Web', envName), {
   domainNames: domainNamesCtx
     ? domainNamesCtx.split(',').map((d) => d.trim()).filter(Boolean)
     : undefined,
+});
+
+// Pipeline de vídeo (Prompt 05): MediaConvert + Lambdas + EventBridge. Aditiva,
+// importa buckets/VPC/Aurora via SSM/lookup (não recria). Ver docs/AWS_ARCHITECTURE §media.
+new LupaMediaStack(app, stackName('Media', envName), {
+  env,
+  envName,
+  description: `Lupa pipeline de vídeo (MediaConvert HLS + Lambdas) (${envName}).`,
 });
 
 // Tags obrigatórias + auditoria de naming em toda a árvore do app.
