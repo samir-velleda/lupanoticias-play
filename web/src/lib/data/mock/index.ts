@@ -39,6 +39,12 @@ import {
   pautas,
   playlists,
 } from './data';
+import {
+  erroNaoEditavel,
+  podeEditar,
+  podeEnviarParaRevisao,
+  podeRevisar,
+} from '@/lib/domain/materia';
 
 // ---- estado mutável em memória (cópias dos seeds) ----
 const _materias: Materia[] = seedMaterias.map((m) => ({ ...m }));
@@ -140,6 +146,14 @@ export function createMockRepositories(): Repositories {
           .sort((a, b) => ordDesc(a.updatedAt, b.updatedAt));
         return paginate(clone(items), opts);
       },
+      async estatisticas() {
+        const pub = publicadas();
+        return {
+          publicadas: pub.length,
+          totalViews: pub.reduce((s, m) => s + (m.views ?? 0), 0),
+          totalCliques: pub.reduce((s, m) => s + (m.cliques ?? 0), 0),
+        };
+      },
       async criar(input: CriarMateriaInput) {
         const autor: Author =
           authors.find((a) => a.papel === 'jornalista') ?? authors[0];
@@ -167,6 +181,7 @@ export function createMockRepositories(): Repositories {
       async atualizar(id: string, input: Partial<CriarMateriaInput>) {
         const m = _materias.find((x) => x.id === id);
         if (!m) throw new Error(`Matéria ${id} não encontrada`);
+        if (!podeEditar(m.status)) throw new Error(erroNaoEditavel(m.status));
         Object.assign(m, input, { updatedAt: agora() });
         if (input.titulo) m.slug = slugify(input.titulo);
         return clone(m);
@@ -174,6 +189,7 @@ export function createMockRepositories(): Repositories {
       async enviarParaRevisao(id: string) {
         const m = _materias.find((x) => x.id === id);
         if (!m) throw new Error(`Matéria ${id} não encontrada`);
+        if (!podeEnviarParaRevisao(m.status)) throw new Error(erroNaoEditavel(m.status));
         const auto = _modo.find((x) => x.categoria === m.editoria)?.ativo;
         if (auto) {
           m.status = 'publicada';
@@ -187,6 +203,9 @@ export function createMockRepositories(): Repositories {
       async aprovar(id: string, revisorId: string, agendadoPara?: string) {
         const m = _materias.find((x) => x.id === id);
         if (!m) throw new Error(`Matéria ${id} não encontrada`);
+        if (!podeRevisar(m.status)) {
+          throw new Error('Só matérias pendentes podem ser aprovadas.');
+        }
         if (agendadoPara) {
           m.status = 'aprovada';
           m.agendadoPara = agendadoPara;
@@ -210,6 +229,9 @@ export function createMockRepositories(): Repositories {
         }
         const m = _materias.find((x) => x.id === id);
         if (!m) throw new Error(`Matéria ${id} não encontrada`);
+        if (!podeRevisar(m.status)) {
+          throw new Error('Só matérias pendentes podem ser recusadas.');
+        }
         m.status = 'recusada';
         m.updatedAt = agora();
         _revisoes.push({

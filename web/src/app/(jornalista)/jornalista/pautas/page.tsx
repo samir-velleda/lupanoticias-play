@@ -2,12 +2,17 @@ import Link from 'next/link';
 import { repositories } from '@/lib/data/repositories';
 import { editoriaNome } from '@/lib/editorias';
 import { formatData } from '@/lib/format';
+import { getUsuarioAtual } from '@/lib/auth/session';
+import { autorIdDoUsuario } from '@/lib/auth/perfil';
 import { EmptyState } from '@/components/ui';
 
 const PRIORIDADE: Record<string, string> = { alta: 'Alta', media: 'Média', baixa: 'Baixa' };
 
 export default async function PautasJornalista() {
-  const pautas = await repositories.pautas.listAbertas();
+  const usuario = await getUsuarioAtual();
+  const autorId = usuario ? autorIdDoUsuario(usuario) : 'a-2';
+  // Só as pautas ATRIBUÍDAS a este jornalista (o contrato filtra por pauta_atribuido).
+  const pautas = await repositories.pautas.listAbertas(autorId);
   return (
     <div>
       <h1 className="mb-1 font-display text-2xl font-extrabold text-ink">Pautas da semana</h1>

@@ -42,6 +42,8 @@ export interface Repositories {
     // workflow
     listMinhas(autorId: string, status?: StatusMateria): Promise<Materia[]>;
     listPendentes(opts?: PageOpts): Promise<Paged<Materia>>;
+    /** Agregados do dashboard sobre TODAS as publicadas (não limitado a uma página). */
+    estatisticas(): Promise<{ publicadas: number; totalViews: number; totalCliques: number }>;
     criar(input: CriarMateriaInput): Promise<Materia>;
     atualizar(id: string, input: Partial<CriarMateriaInput>): Promise<Materia>;
     enviarParaRevisao(id: string): Promise<Materia>; // aplica modo automático se ativo

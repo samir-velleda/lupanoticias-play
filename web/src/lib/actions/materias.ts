@@ -5,8 +5,10 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { repositories } from '@/lib/data/repositories';
 import { exigirGrupo } from '@/lib/auth/session';
+import { autorIdDoUsuario } from '@/lib/auth/perfil';
+import { erroNaoEditavel, podeEditar } from '@/lib/domain/materia';
 import { isEditoriaSlug } from '@/lib/editorias';
-import type { ArticleBlock, CriarMateriaInput, EditoriaSlug } from '@/types';
+import type { ArticleBlock, CriarMateriaInput, EditoriaSlug, Materia } from '@/types';
 
 const bloco = z.any().transform((b) => b as ArticleBlock);
 
@@ -28,7 +30,7 @@ export interface SalvarMateriaPayload extends z.input<typeof materiaSchema> {
 
 /** Salva rascunho (cria/atualiza) e, opcionalmente, envia para revisão. */
 export async function salvarMateria(payload: SalvarMateriaPayload): Promise<void> {
-  await exigirGrupo('jornalista', 'diretor');
+  const usuario = await exigirGrupo('jornalista', 'diretor');
   const data = materiaSchema.parse(payload);
   const input: CriarMateriaInput = {
     titulo: data.titulo,
@@ -41,9 +43,23 @@ export async function salvarMateria(payload: SalvarMateriaPayload): Promise<void
     pautaId: data.pautaId || undefined,
   };
 
-  const materia = payload.id
-    ? await repositories.materias.atualizar(payload.id, input)
-    : await repositories.materias.criar(input);
+  let materia: Materia;
+  if (payload.id) {
+    // Autorização por RECURSO (não só por papel): a matéria tem de ser do autor
+    // (admin passa livre) e estar num estado editável — bloqueia editar/ despublicar
+    // conteúdo alheio ou já publicado direto pela URL da action. Ver [[gap ownership]].
+    const atual = await repositories.materias.getById(payload.id);
+    if (!atual) throw new Error('Matéria não encontrada.');
+    const autorId = autorIdDoUsuario(usuario);
+    const dono = atual.autores.some((a) => a.id === autorId);
+    if (!dono && !usuario.grupos.includes('admin')) {
+      throw new Error('Você só pode editar as suas próprias matérias.');
+    }
+    if (!podeEditar(atual.status)) throw new Error(erroNaoEditavel(atual.status));
+    materia = await repositories.materias.atualizar(payload.id, input);
+  } else {
+    materia = await repositories.materias.criar(input);
+  }
 
   if (payload.enviar) {
     const enviada = await repositories.materias.enviarParaRevisao(materia.id);

@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import type { EditoriaSlug, Media } from '@/types';
 import { repositories } from '@/lib/data/repositories';
 import { editoriaNome, isEditoriaSlug, EDITORIA_SLUGS } from '@/lib/editorias';
+import { STATUS_PUBLICO } from '@/lib/domain/materia';
 import { formatData, formatRelativo } from '@/lib/format';
 import { Avatar, Tag, Kicker } from '@/components/ui';
 import { Cover } from '@/components/media/Cover';
@@ -38,7 +39,11 @@ export async function generateStaticParams() {
 
 async function carregar(editoria: string, slug: string) {
   if (!isEditoriaSlug(editoria)) return null;
-  return repositories.materias.getBySlug(editoria as EditoriaSlug, slug);
+  const materia = await repositories.materias.getBySlug(editoria as EditoriaSlug, slug);
+  // Gate editorial: só matéria PUBLICADA é servível ao leitor. Rascunho/pendente/
+  // recusada/aprovada(agendada) com slug conhecido → null → 404 (não vaza não publicado).
+  if (!materia || materia.status !== STATUS_PUBLICO) return null;
+  return materia;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
