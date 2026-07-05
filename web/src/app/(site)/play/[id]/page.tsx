@@ -95,11 +95,10 @@ export default async function PlayerPage({ params }: Props) {
       ) : null}
 
       <div className="mt-5">
-        <PlayerActions
-          titulo={media.titulo}
-          likesIniciais={media.likes ?? 0}
-          downloadUrl={media.playbackUrl}
-        />
+        {/* Sem downloadUrl por ora: playbackUrl é manifesto HLS (.m3u8), não arquivo
+            baixável → o botão Baixar fica desabilitado. Ligar a um MP4 progressivo
+            quando o MediaConvert gerar (prompt 05). */}
+        <PlayerActions titulo={media.titulo} likesIniciais={media.likes ?? 0} />
       </div>
 
       <div className="mt-6">

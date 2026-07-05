@@ -25,8 +25,8 @@ export function CriarUsuarioForm() {
           {pending ? 'Criando…' : 'Criar e convidar'}
         </button>
       </div>
-      {state.erro ? <p className="mt-3 font-mono text-[11px] text-ink">{state.erro}</p> : null}
-      {state.ok ? <p className="mt-3 font-mono text-[11px] text-gray-500">Usuário criado — convite enviado por e-mail.</p> : null}
+      {state.erro ? <p role="alert" aria-live="assertive" className="mt-3 font-mono text-[11px] text-ink">{state.erro}</p> : null}
+      {state.ok ? <p role="status" aria-live="polite" className="mt-3 font-mono text-[11px] text-gray-500">Usuário criado — convite enviado por e-mail.</p> : null}
     </form>
   );
 }

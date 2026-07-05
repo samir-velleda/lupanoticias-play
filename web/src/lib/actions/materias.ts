@@ -8,16 +8,24 @@ import { exigirGrupo } from '@/lib/auth/session';
 import { autorIdDoUsuario } from '@/lib/auth/perfil';
 import { erroNaoEditavel, podeEditar } from '@/lib/domain/materia';
 import { isEditoriaSlug } from '@/lib/editorias';
-import type { ArticleBlock, CriarMateriaInput, EditoriaSlug, Materia } from '@/types';
+import type { CriarMateriaInput, EditoriaSlug, Materia } from '@/types';
 
-const bloco = z.any().transform((b) => b as ArticleBlock);
+// Valida os 5 tipos de bloco do corpo (não mais z.any()): rejeita JSON malformado
+// antes de gravar no Aurora → o site nunca renderiza um bloco quebrado.
+const blocoSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('paragraph'), text: z.string() }),
+  z.object({ type: z.literal('heading'), text: z.string() }),
+  z.object({ type: z.literal('pullquote'), text: z.string(), cite: z.string().optional() }),
+  z.object({ type: z.literal('image'), url: z.string(), caption: z.string().optional() }),
+  z.object({ type: z.literal('embed'), mediaId: z.string() }),
+]);
 
 const materiaSchema = z.object({
   titulo: z.string().trim().min(1, 'Título obrigatório').max(140),
   standfirst: z.string().trim().default(''),
   editoria: z.string().refine(isEditoriaSlug, 'Editoria inválida'),
   tags: z.array(z.string().trim()).default([]),
-  corpo: z.array(bloco).default([]),
+  corpo: z.array(blocoSchema).default([]),
   heroImageUrl: z.string().trim().optional(),
   heroCaption: z.string().trim().optional(),
   pautaId: z.string().trim().optional(),

@@ -70,7 +70,7 @@ function ItemFila({ p }: { p: PendenteItem }) {
       ) : null}
 
       {erro ? (
-        <p className="mt-3 rounded border border-ink bg-surface-2 px-3 py-2 font-mono text-[11px] text-ink">
+        <p role="alert" aria-live="assertive" className="mt-3 rounded border border-ink bg-surface-2 px-3 py-2 font-mono text-[11px] text-ink">
           {erro}
         </p>
       ) : null}

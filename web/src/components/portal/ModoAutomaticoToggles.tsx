@@ -25,23 +25,33 @@ export function ModoAutomaticoToggles({ editorias }: { editorias: EditoriaModo[]
 
 function ToggleLinha({ slug, nome, ativoInicial }: { slug: string; nome: string; ativoInicial: boolean }) {
   const [ativo, setAtivo] = useState(ativoInicial);
+  const [erro, setErro] = useState('');
   const [pending, start] = useTransition();
 
   const toggle = () => {
     const novo = !ativo;
+    setErro('');
     setAtivo(novo); // otimista
     start(async () => {
       try {
         await definirModoAutomatico(slug, novo);
-      } catch {
+      } catch (e) {
         setAtivo(!novo); // reverte em falha
+        setErro(e instanceof Error ? e.message : 'Não foi possível salvar. Tente de novo.');
       }
     });
   };
 
   return (
-    <div className="flex items-center justify-between px-4 py-3">
-      <span className="font-display text-sm font-semibold text-ink">{nome}</span>
+    <div className="flex items-center justify-between gap-3 px-4 py-3">
+      <div className="min-w-0">
+        <span className="font-display text-sm font-semibold text-ink">{nome}</span>
+        {erro ? (
+          <p role="status" aria-live="polite" className="mt-0.5 font-mono text-[11px] text-ink">
+            {erro}
+          </p>
+        ) : null}
+      </div>
       <button
         type="button"
         role="switch"

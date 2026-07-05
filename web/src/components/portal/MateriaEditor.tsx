@@ -156,7 +156,7 @@ export function MateriaEditor({
 
       {/* Sidebar */}
       <aside className="space-y-5">
-        {erro ? <p className="rounded border border-ink bg-surface-2 px-3 py-2 font-mono text-[11px] text-ink">{erro}</p> : null}
+        {erro ? <p role="alert" aria-live="assertive" className="rounded border border-ink bg-surface-2 px-3 py-2 font-mono text-[11px] text-ink">{erro}</p> : null}
         <div>
           <label className={label} htmlFor="editoria">Editoria</label>
           <select id="editoria" value={editoria} onChange={(e) => setEditoria(e.target.value)} className={field}>
