@@ -138,7 +138,7 @@ export function createAuroraRepositories(): Repositories {
       async listByEditoria(editoria, opts) {
         const { page, pageSize, offset } = pageOf(opts);
         const rows = await q(
-          `${MAT_SELECT}, count(*) OVER() AS _total
+          `${MAT_SELECT.replace('FROM materia m', ', count(*) OVER() AS _total FROM materia m')}
            WHERE m.status = 'publicada' AND m.editoria = $1
            ORDER BY m.published_at DESC NULLS LAST
            LIMIT $2 OFFSET $3`,
@@ -184,7 +184,7 @@ export function createAuroraRepositories(): Repositories {
       async listPendentes(opts) {
         const { page, pageSize, offset } = pageOf(opts);
         const rows = await q(
-          `${MAT_SELECT}, count(*) OVER() AS _total
+          `${MAT_SELECT.replace('FROM materia m', ', count(*) OVER() AS _total FROM materia m')}
            WHERE m.status = 'pendente'
            ORDER BY m.updated_at DESC NULLS LAST
            LIMIT $1 OFFSET $2`,
