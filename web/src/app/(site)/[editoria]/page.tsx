@@ -21,6 +21,7 @@ export function generateStaticParams() {
 
 interface Props {
   params: Promise<{ editoria: string }>;
+  searchParams: Promise<{ page?: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -33,14 +34,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function CategoriaPage({ params }: Props) {
+export default async function CategoriaPage({ params, searchParams }: Props) {
   const { editoria } = await params;
   if (!isEditoriaSlug(editoria)) notFound();
 
-  // Estático (SSG) → editoria inválida devolve 404 REAL. A paginação por ?page=
-  // (hoje inerte: nenhuma editoria passa de 1 página no mock) volta dinâmica com
-  // Aurora/ISR no prompt 06, junto do dynamicParams=true.
-  const page = 1;
+  // dynamicParams=false + generateStaticParams → editoria inválida devolve 404 REAL.
+  // A paginação lê ?page= (torna o render dinâmico p/ page>1); o bloco de destaque
+  // (lead + secundárias) só aparece na página 1.
+  const { page: pageParam } = await searchParams;
+  const page = Math.max(1, Number(pageParam) || 1);
 
   const [ed, paged] = await Promise.all([
     repositories.editorias.get(editoria),

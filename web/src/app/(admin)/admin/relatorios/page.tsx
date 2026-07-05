@@ -1,6 +1,8 @@
+import { exigirGrupo } from '@/lib/auth/session';
 import { EmBreve } from '@/components/portal/EmBreve';
 
-export default function RelatoriosShell() {
+export default async function RelatoriosShell() {
+  await exigirGrupo('admin'); // analytics/relatórios = admin (CLAUDE.md §2), como Publicidade/Config
   return (
     <EmBreve
       titulo="Relatórios"

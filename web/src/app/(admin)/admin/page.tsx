@@ -14,23 +14,21 @@ function Kpi({ label, valor }: { label: string; valor: string }) {
 }
 
 export default async function AdminDashboard() {
-  const [maisLidas, pendentes] = await Promise.all([
-    repositories.materias.listMaisLidas(100),
-    repositories.materias.listPendentes({ pageSize: 100 }),
+  const [stats, top, pendentes] = await Promise.all([
+    repositories.materias.estatisticas(),
+    repositories.materias.listMaisLidas(5),
+    repositories.materias.listPendentes({ pageSize: 5 }),
   ]);
-  const totalViews = maisLidas.reduce((s, m) => s + (m.views ?? 0), 0);
-  const totalCliques = maisLidas.reduce((s, m) => s + (m.cliques ?? 0), 0);
-  const top = maisLidas.slice(0, 5);
 
   return (
     <div>
       <h1 className="mb-6 font-display text-2xl font-extrabold text-ink">Dashboard</h1>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Kpi label="Publicadas" valor={String(maisLidas.length)} />
+        <Kpi label="Publicadas" valor={String(stats.publicadas)} />
         <Kpi label="Pendentes" valor={String(pendentes.total)} />
-        <Kpi label="Visualizações" valor={formatNumero(totalViews)} />
-        <Kpi label="Cliques" valor={formatNumero(totalCliques)} />
+        <Kpi label="Visualizações" valor={formatNumero(stats.totalViews)} />
+        <Kpi label="Cliques" valor={formatNumero(stats.totalCliques)} />
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -59,7 +57,7 @@ export default async function AdminDashboard() {
             </Link>
           </div>
           {pendentes.items.length === 0 ? (
-            <p className="font-serif text-[15px] text-gray-500">Nenhuma matéria pendente. 🎉</p>
+            <p className="font-serif text-[15px] text-gray-500">Nenhuma matéria pendente.</p>
           ) : (
             <ul className="space-y-3">
               {pendentes.items.slice(0, 5).map((m) => (
