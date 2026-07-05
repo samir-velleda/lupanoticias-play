@@ -15,7 +15,14 @@ interface Props {
 
 // Aurora/ISR: pré-renderiza as matérias conhecidas e revalida a cada 30s; slug NOVO
 // (criado pelo jornalista) renderiza sob demanda (dynamicParams=true) → roteável na hora.
-// Editoria/slug inexistente → carregar() devolve null → notFound() → 404 real.
+// Editoria/slug inexistente → carregar() devolve null → notFound() → 404 HTTP REAL.
+//
+// ⚠️ Esta rota NÃO pode ter loading.tsx acima dela (nem no grupo, nem em [editoria],
+// nem aqui). Um loading.tsx cria um Suspense boundary que STREAMA o shell com HTTP 200
+// antes de a página resolver; o notFound() posterior renderiza o not-found mas o status
+// fica preso em 200 (soft-404). Por isso os loading.tsx que envolviam a matéria foram
+// removidos. O skeleton de carregamento, quando necessário, deve vir de um <Suspense>
+// INTERNO à página, DEPOIS do notFound() (que fixa o 404 antes de qualquer stream).
 export const dynamicParams = true;
 export const revalidate = 30;
 export async function generateStaticParams() {
@@ -37,7 +44,10 @@ async function carregar(editoria: string, slug: string) {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { editoria, slug } = await params;
   const materia = await carregar(editoria, slug);
-  if (!materia) return { title: 'Matéria não encontrada' };
+  // Sinaliza o 404 JÁ na fase de metadata: se deixássemos só o notFound() do
+  // componente, o Next já teria comprometido o status HTTP 200 (metadata resolvida
+  // com sucesso) e o not-found renderizaria como soft-404 (200). Chamar aqui fixa 404.
+  if (!materia) notFound();
   return {
     title: materia.titulo,
     description: materia.standfirst,
