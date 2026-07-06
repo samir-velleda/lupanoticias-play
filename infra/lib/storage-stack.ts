@@ -72,6 +72,21 @@ export class LupaStorageStack extends Stack {
       removalPolicy,
     });
 
+    // CORS na entrega de mídia: o hls.js busca segmentos cross-origin (página no web-cdn,
+    // HLS no media-cdn). Sem estes cabeçalhos, a reprodução falha no browser. Aditivo.
+    const mediaCors = new cloudfront.ResponseHeadersPolicy(this, 'MediaCors', {
+      responseHeadersPolicyName: resourceName('media-cors', envName),
+      comment: 'CORS para entrega de HLS (Lupa Play / vídeo em matéria).',
+      corsBehavior: {
+        accessControlAllowOrigins: ['*'],
+        accessControlAllowMethods: ['GET', 'HEAD'],
+        accessControlAllowHeaders: ['*'],
+        accessControlAllowCredentials: false,
+        accessControlMaxAge: Duration.seconds(600),
+        originOverride: true,
+      },
+    });
+
     // CloudFront com OAC: default = estáticos; /media/* = mídia.
     this.distribution = new cloudfront.Distribution(this, 'Cdn', {
       comment: resourceName('cdn', envName),
@@ -88,6 +103,7 @@ export class LupaStorageStack extends Stack {
           origin: origins.S3BucketOrigin.withOriginAccessControl(this.mediaBucket),
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+          responseHeadersPolicy: mediaCors,
         },
       },
     });
