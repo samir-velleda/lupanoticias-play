@@ -133,6 +133,15 @@ export class LupaWebStack extends Stack {
       }),
     );
 
+    // Upload de vídeo (Prompt 05): assinar PUTs pré-assinados no bucket de uploads,
+    // escopado ao prefixo uploads/. O browser sobe direto ao S3 com essa URL.
+    fn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['s3:PutObject'],
+        resources: [`arn:aws:s3:::${appEnv.LUPA_UPLOADS_BUCKET}/uploads/*`],
+      }),
+    );
+
     // Admin do Cognito (portal /admin/usuarios): listar/criar usuários e atribuir grupos,
     // escopado ao User Pool do projeto. (Sem AdminDeleteUser — nada de deleção.)
     const userPoolArn = Stack.of(this).formatArn({

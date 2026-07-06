@@ -401,10 +401,10 @@ export function createMockRepositories(): Repositories {
         const resto = pool.filter((m) => !mesmaEditoria.includes(m));
         return clone([...mesmaEditoria, ...resto].slice(0, limit));
       },
-      async criarUpload(input: CreateMediaInput) {
-        const autor = authors.find((a) => a.papel === 'jornalista') ?? authors[0];
+      async criarUpload(input: CreateMediaInput, opts: { id: string; autorId: string }) {
+        const autor = authors.find((a) => a.id === opts.autorId) ?? authors.find((a) => a.papel === 'jornalista') ?? authors[0];
         const nova: Media = {
-          id: nextId('media'),
+          id: opts.id,
           tipo: input.tipo,
           titulo: input.titulo,
           descricao: input.descricao,

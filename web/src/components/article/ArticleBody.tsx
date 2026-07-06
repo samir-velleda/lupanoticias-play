@@ -1,6 +1,6 @@
 import type { ArticleBlock, Media } from '@/types';
 import { Cover } from '@/components/media/Cover';
-import { MediaThumb } from '@/components/media/MediaThumb';
+import { HlsPlayer } from '@/components/play/HlsPlayer';
 
 /**
  * Renderiza `ArticleBlock[]` no corpo Newsreader 19/1.75, com H2, pull-quote,
@@ -60,11 +60,23 @@ export function ArticleBody({
           case 'embed': {
             const media = embeds[block.mediaId];
             if (!media) return null;
+            const rotulo = media.tipo === 'podcast' ? 'Podcast' : 'Vídeo';
             return (
               <figure key={i} className="my-6">
-                <MediaThumb media={media} rounded="rounded-md" />
+                {media.status === 'pronto' && media.playbackUrl ? (
+                  // Toca inline na matéria (vídeo processado pelo pipeline).
+                  <HlsPlayer src={media.playbackUrl} title={media.titulo} className="rounded-md" />
+                ) : media.status === 'erro' ? (
+                  <div className="flex items-center justify-center rounded-md border border-line bg-surface-2 px-4 py-10 text-center font-mono text-[12px] text-gray-500">
+                    Não foi possível processar este vídeo.
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center rounded-md border border-line bg-surface-2 px-4 py-10 text-center font-mono text-[12px] text-gray-500">
+                    Vídeo em processamento…
+                  </div>
+                )}
                 <figcaption className="mt-2.5 font-mono text-[11.5px] text-gray-400">
-                  {media.tipo === 'podcast' ? 'Podcast' : 'Vídeo'}: {media.titulo}
+                  {rotulo}: {media.titulo}
                 </figcaption>
               </figure>
             );

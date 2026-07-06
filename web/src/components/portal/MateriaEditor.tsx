@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import type { ArticleBlock, Editoria, Materia, Pauta } from '@/types';
 import { salvarMateria } from '@/lib/actions/materias';
+import { BlocoVideo } from '@/components/portal/BlocoVideo';
 
 type BlocoTipo = ArticleBlock['type'];
 
@@ -139,7 +140,12 @@ export function MateriaEditor({
                   </div>
                 ) : null}
                 {b.type === 'embed' ? (
-                  <input value={b.mediaId} onChange={(e) => updBloco(i, { mediaId: e.target.value })} className={field} placeholder="ID da mídia (Lupa Play)" />
+                  <BlocoVideo
+                    mediaId={b.mediaId}
+                    onMediaId={(id) => updBloco(i, { mediaId: id })}
+                    editoria={editoria}
+                    tituloArtigo={titulo}
+                  />
                 ) : null}
               </div>
             ))}

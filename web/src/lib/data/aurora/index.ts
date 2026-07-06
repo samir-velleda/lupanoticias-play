@@ -581,30 +581,27 @@ export function createAuroraRepositories(): Repositories {
         );
         return rows.map(mapMedia);
       },
-      async criarUpload(input: CreateMediaInput) {
-        const id = nid('media');
-        const autorRows = await q<Row>(
-          `SELECT id FROM author WHERE papel = 'jornalista' ORDER BY id LIMIT 1`,
-        );
-        const autorId = autorRows[0] ? String(autorRows[0].id) : null;
+      async criarUpload(input: CreateMediaInput, opts: { id: string; autorId: string }) {
+        const id = opts.id;
         await q(
           `INSERT INTO media (id, tipo, titulo, descricao, editoria, autor_id, cover_url,
              published_at, visibilidade, agendado_para, destaque, transcricao, legendas_vtt,
-             status, views, likes)
-           VALUES ($1,$2,$3,$4,$5,$6,$7, now(), $8,$9,$10,$11,$12,'processando',0,0)`,
+             status, views, likes, s3_key)
+           VALUES ($1,$2,$3,$4,$5,$6,$7, now(), $8,$9,$10,$11,$12,'processando',0,0,$13)`,
           [
             id,
             input.tipo,
             input.titulo,
             input.descricao ?? null,
             input.editoria,
-            autorId,
+            opts.autorId,
             input.coverUrl ?? null,
             input.visibilidade,
             input.agendadoPara ?? null,
             input.destaque,
             input.transcricaoAuto,
             input.gerarLegendasVTT,
+            input.uploadKey ?? null,
           ],
         );
         const rows = await q(`${MEDIA_SELECT} WHERE me.id = $1`, [id]);

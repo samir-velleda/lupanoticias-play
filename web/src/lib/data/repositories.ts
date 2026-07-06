@@ -75,7 +75,8 @@ export interface Repositories {
     listPlayShelf(): Promise<Playlist[]>;
     listCortes(opts?: PageOpts): Promise<Paged<Media>>;
     getNext(id: string, limit?: number): Promise<Media[]>;
-    criarUpload(input: CreateMediaInput): Promise<Media>; // liga ao upload S3
+    // Cria o registro de mídia (status 'processando') com id/autor dados e s3_key do upload.
+    criarUpload(input: CreateMediaInput, opts: { id: string; autorId: string }): Promise<Media>;
   };
   ads: {
     servir(slot: AdSlotId): Promise<AdCreative | null>;
