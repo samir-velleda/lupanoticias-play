@@ -565,7 +565,7 @@ export function createAuroraRepositories(): Repositories {
         const rows = await q(
           `${MEDIA_SELECT.replace('FROM media me', ', count(*) OVER() AS _total FROM media me')}
            WHERE me.tipo = 'short' AND me.status = 'pronto'
-           ORDER BY me.published_at DESC NULLS LAST LIMIT $2 OFFSET $3`,
+           ORDER BY me.published_at DESC NULLS LAST LIMIT $1 OFFSET $2`,
           [pageSize, offset],
         );
         return { items: rows.map(mapMedia), page, pageSize, total: totalDe(rows) } as Paged<Media>;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import type { ArticleBlock, Editoria, Materia, Pauta } from '@/types';
 import { salvarMateria } from '@/lib/actions/materias';
 import { BlocoVideo } from '@/components/portal/BlocoVideo';
@@ -45,7 +45,56 @@ export function MateriaEditor({
   const [pautaId, setPautaId] = useState(materia?.pautaId ?? pautaInicial ?? '');
   const [corpo, setCorpo] = useState<ArticleBlock[]>(materia?.corpo ?? [{ type: 'paragraph', text: '' }]);
   const [erro, setErro] = useState('');
+  const [recuperado, setRecuperado] = useState(false);
   const [pending, startTransition] = useTransition();
+
+  // Autosave LOCAL: o rascunho nunca se perde num deploy/queda de conexão. Ao salvar com
+  // sucesso, limpa; se um deploy invalidar a server action (aba antiga), basta recarregar
+  // — o texto é restaurado daqui. Chave por matéria (ou 'nova').
+  const chaveRascunho = `lupa_draft_${materia?.id ?? 'nova'}`;
+  const jaMontou = useRef(false);
+
+  /* eslint-disable react-hooks/set-state-in-effect -- restore pós-mount (evita mismatch de hidratação) */
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(chaveRascunho);
+      if (!raw) return;
+      const d = JSON.parse(raw) as Record<string, unknown>;
+      if (d && typeof d === 'object') {
+        if (typeof d.titulo === 'string') setTitulo(d.titulo);
+        if (typeof d.standfirst === 'string') setStandfirst(d.standfirst);
+        if (typeof d.editoria === 'string') setEditoria(d.editoria);
+        if (Array.isArray(d.tags)) setTags(d.tags as string[]);
+        if (typeof d.heroImageUrl === 'string') setHeroImageUrl(d.heroImageUrl);
+        if (typeof d.heroCaption === 'string') setHeroCaption(d.heroCaption);
+        if (typeof d.pautaId === 'string') setPautaId(d.pautaId);
+        if (Array.isArray(d.corpo)) setCorpo(d.corpo as ArticleBlock[]);
+        setRecuperado(true);
+      }
+    } catch {
+      /* localStorage indisponível — segue sem */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  useEffect(() => {
+    if (!jaMontou.current) {
+      jaMontou.current = true;
+      return;
+    }
+    const t = setTimeout(() => {
+      try {
+        localStorage.setItem(
+          chaveRascunho,
+          JSON.stringify({ titulo, standfirst, editoria, tags, heroImageUrl, heroCaption, pautaId, corpo }),
+        );
+      } catch {
+        /* quota/indisponível */
+      }
+    }, 800);
+    return () => clearTimeout(t);
+  }, [titulo, standfirst, editoria, tags, heroImageUrl, heroCaption, pautaId, corpo, chaveRascunho]);
 
   const addBloco = (t: BlocoTipo) => setCorpo((c) => [...c, NOVO_BLOCO[t]()]);
   const updBloco = (i: number, patch: Partial<ArticleBlock>) =>
@@ -88,11 +137,21 @@ export function MateriaEditor({
         });
         if (r?.erro) setErro(r.erro);
       } catch (e) {
-        // redirect() lança NEXT_REDIRECT (sucesso). Qualquer outro erro (ex.: action
-        // mascarada pelo Next) vira mensagem amigável — nunca a tela crua de erro.
-        if (e instanceof Error && !/NEXT_REDIRECT/.test(e.message)) {
-          setErro('Não foi possível salvar agora. Tente novamente em instantes.');
+        const msg = e instanceof Error ? e.message : '';
+        if (/NEXT_REDIRECT/.test(msg)) {
+          // Sucesso: o Next navega. Limpa o rascunho local.
+          try {
+            localStorage.removeItem(chaveRascunho);
+          } catch {
+            /* ok */
+          }
+          return;
         }
+        // Falha no DISPATCH da action (ex.: site atualizado deixou a aba com versão antiga
+        // → "Invalid Server Actions request"). O texto está salvo localmente: basta recarregar.
+        setErro(
+          'Não foi possível salvar. Se o site foi atualizado, recarregue a página (Cmd/Ctrl+R) — seu texto está salvo neste navegador e será restaurado — e salve de novo.',
+        );
       }
     });
   };
@@ -166,6 +225,7 @@ export function MateriaEditor({
 
       {/* Sidebar */}
       <aside className="space-y-5">
+        {recuperado ? <p role="status" aria-live="polite" className="rounded border border-line bg-surface-2 px-3 py-2 font-mono text-[11px] text-gray-500">Rascunho local recuperado.</p> : null}
         {erro ? <p role="alert" aria-live="assertive" className="rounded border border-ink bg-surface-2 px-3 py-2 font-mono text-[11px] text-ink">{erro}</p> : null}
         <div>
           <label className={label} htmlFor="editoria">Editoria</label>

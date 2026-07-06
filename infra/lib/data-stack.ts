@@ -36,7 +36,9 @@ export class LupaDataStack extends Stack {
       securityGroups: [dbSecurityGroup],
       defaultDatabaseName: 'lupa',
       // Serverless v2: min baixo em dev p/ custo (docs §10).
-      serverlessV2MinCapacity: prod ? 1 : 0.5,
+      // dev: piso 0.5→1 ACU (autorizado) — folga de conexão/latência, sem picos de
+      // connect-timeout ao sair do piso. Modify IN-PLACE do cluster (sem recriar/dados).
+      serverlessV2MinCapacity: 1,
       serverlessV2MaxCapacity: prod ? 8 : 2,
       writer: rds.ClusterInstance.serverlessV2('writer', {
         instanceIdentifier: resourceName('aurora-writer', envName),

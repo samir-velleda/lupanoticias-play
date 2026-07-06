@@ -35,4 +35,13 @@ describe('aurora SQL — count(*) OVER() dentro do SELECT (antes do FROM)', () =
       /MAT_SELECT\.replace\(\s*'FROM materia m',\s*', count\(\*\) OVER\(\) AS _total FROM materia m'\s*\)/,
     );
   });
+
+  it('listCortes usa LIMIT $1 OFFSET $2 (tipo literal, sem $1 → evita 42P18 no /cortes)', () => {
+    // 'short' é literal → não há $1 de "tipo"; a paginação DEVE começar em $1, senão o
+    // Postgres não determina o tipo de $1 ("could not determine data type of parameter $1").
+    const i = src.indexOf('async listCortes');
+    const trecho = src.slice(i, i + 500);
+    expect(trecho).toMatch(/LIMIT \$1 OFFSET \$2/);
+    expect(trecho).not.toMatch(/LIMIT \$2 OFFSET \$3/);
+  });
 });

@@ -52,8 +52,9 @@ async function getPool(): Promise<Pool> {
         password: creds.password,
         max: Number(process.env.LUPA_AURORA_POOL_MAX ?? 3),
         idleTimeoutMillis: 30_000,
-        // 15s dá folga para o Aurora Serverless v2 sair do piso (0.5 ACU) sob rajada.
-        connectionTimeoutMillis: 15_000,
+        // Fail-fast (6s) + retry com backoff (abaixo): melhor que um timeout longo único,
+        // cabe no orçamento de 30s do Lambda e atravessa o scaling do Serverless v2.
+        connectionTimeoutMillis: 6_000,
         // TLS: conexão criptografada. O cluster fica em subnets isoladas; em prod,
         // trocar por verificação com a CA global do RDS. (rejectUnauthorized=false
         // mantém a criptografia, sem validar a cadeia do certificado.)
@@ -72,7 +73,10 @@ async function getPool(): Promise<Pool> {
   return poolPromise;
 }
 
-const RETRY_CONEXAO = 2;
+// 3 re-tentativas (4 tentativas no total) com backoff crescente: dá tempo do Aurora
+// escalar do piso. Total no pior caso ~6s×4 + (0.4+0.9+1.8)s ≈ 27s < 30s do Lambda.
+const RETRY_CONEXAO = 3;
+const BACKOFF_MS = [400, 900, 1800];
 const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Erro de ESTABELECIMENTO de conexão (Aurora escalando/ocioso) — seguro re-tentar. */
@@ -101,7 +105,7 @@ export async function q<T extends QueryResultRow = QueryResultRow>(
     } catch (e) {
       if (tentativa < RETRY_CONEXAO && ehErroConexao(e)) {
         poolPromise = null; // recria o pool na próxima tentativa
-        await espera(400 * (tentativa + 1));
+        await espera(BACKOFF_MS[tentativa] ?? 2000);
         continue;
       }
       throw e;
@@ -129,7 +133,7 @@ export async function tx<T>(fn: (c: PoolClient) => Promise<T>): Promise<T> {
       // Falha ao ABRIR conexão: nada rodou → retry seguro.
       if (tentativa < RETRY_CONEXAO && ehErroConexao(e)) {
         poolPromise = null;
-        await espera(400 * (tentativa + 1));
+        await espera(BACKOFF_MS[tentativa] ?? 2000);
         continue;
       }
       throw e;
@@ -150,7 +154,7 @@ export async function tx<T>(fn: (c: PoolClient) => Promise<T>): Promise<T> {
       // A transação é atômica (rollback) → re-executar é seguro em erro de conexão.
       if (tentativa < RETRY_CONEXAO && ehErroConexao(e)) {
         poolPromise = null;
-        await espera(400 * (tentativa + 1));
+        await espera(BACKOFF_MS[tentativa] ?? 2000);
         continue;
       }
       throw e;
