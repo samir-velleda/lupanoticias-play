@@ -36,10 +36,20 @@ export interface SalvarMateriaPayload extends z.input<typeof materiaSchema> {
   enviar?: boolean;
 }
 
-/** Salva rascunho (cria/atualiza) e, opcionalmente, envia para revisão. */
-export async function salvarMateria(payload: SalvarMateriaPayload): Promise<void> {
+/**
+ * Salva rascunho (cria/atualiza) e, opcionalmente, envia para revisão.
+ * Retorna { erro } para falhas tratáveis (validação, ownership, estado, indisponibilidade
+ * do banco) — o editor mostra a mensagem em vez da tela crua de erro. Sucesso redireciona.
+ */
+export async function salvarMateria(
+  payload: SalvarMateriaPayload,
+): Promise<{ erro: string } | void> {
   const usuario = await exigirGrupo('jornalista', 'diretor');
-  const data = materiaSchema.parse(payload);
+  const parsed = materiaSchema.safeParse(payload);
+  if (!parsed.success) {
+    return { erro: parsed.error.issues[0]?.message ?? 'Dados inválidos.' };
+  }
+  const data = parsed.data;
   const input: CriarMateriaInput = {
     titulo: data.titulo,
     standfirst: data.standfirst,
@@ -51,40 +61,49 @@ export async function salvarMateria(payload: SalvarMateriaPayload): Promise<void
     pautaId: data.pautaId || undefined,
   };
 
-  let materia: Materia;
-  if (payload.id) {
-    // Autorização por RECURSO (não só por papel): a matéria tem de ser do autor
-    // (admin passa livre) e estar num estado editável — bloqueia editar/ despublicar
-    // conteúdo alheio ou já publicado direto pela URL da action. Ver [[gap ownership]].
-    const atual = await repositories.materias.getById(payload.id);
-    if (!atual) throw new Error('Matéria não encontrada.');
-    const autorId = autorIdDoUsuario(usuario);
-    const dono = atual.autores.some((a) => a.id === autorId);
-    if (!dono && !usuario.grupos.includes('admin')) {
-      throw new Error('Você só pode editar as suas próprias matérias.');
+  try {
+    let materia: Materia;
+    if (payload.id) {
+      // Autorização por RECURSO: a matéria tem de ser do autor (admin passa livre) e estar
+      // num estado editável — bloqueia editar/despublicar conteúdo alheio/publicado.
+      const atual = await repositories.materias.getById(payload.id);
+      if (!atual) return { erro: 'Matéria não encontrada.' };
+      const autorId = autorIdDoUsuario(usuario);
+      const dono = atual.autores.some((a) => a.id === autorId);
+      if (!dono && !usuario.grupos.includes('admin')) {
+        return { erro: 'Você só pode editar as suas próprias matérias.' };
+      }
+      if (!podeEditar(atual.status)) return { erro: erroNaoEditavel(atual.status) };
+      materia = await repositories.materias.atualizar(payload.id, input);
+    } else {
+      materia = await repositories.materias.criar(input);
     }
-    if (!podeEditar(atual.status)) throw new Error(erroNaoEditavel(atual.status));
-    materia = await repositories.materias.atualizar(payload.id, input);
-  } else {
-    materia = await repositories.materias.criar(input);
+
+    if (payload.enviar) {
+      const enviada = await repositories.materias.enviarParaRevisao(materia.id);
+      if (enviada.status === 'publicada') {
+        // Modo automático publicou direto → aparece no site na hora.
+        revalidatePath('/');
+        revalidatePath(`/${enviada.editoria}`);
+        revalidatePath(`/${enviada.editoria}/${enviada.slug}`);
+      }
+      // Nova pendente entra na fila do Diretor.
+      revalidatePath('/admin/redacao');
+      revalidatePath('/admin');
+    }
+
+    revalidatePath('/jornalista');
+    revalidatePath('/jornalista/correcoes');
+  } catch (e) {
+    // Banco indisponível/lento (ex.: timeout de conexão do Aurora) ou falha inesperada:
+    // mensagem clara em vez da tela crua. O db.ts já re-tenta conexões antes de chegar aqui.
+    console.error('salvarMateria falhou:', e);
+    return {
+      erro: 'Não foi possível salvar agora. O banco pode estar ocupado — tente novamente em instantes.',
+    };
   }
 
-  if (payload.enviar) {
-    const enviada = await repositories.materias.enviarParaRevisao(materia.id);
-    if (enviada.status === 'publicada') {
-      // Modo automático publicou direto → aparece no site na hora.
-      revalidatePath('/');
-      revalidatePath(`/${enviada.editoria}`);
-      revalidatePath(`/${enviada.editoria}/${enviada.slug}`);
-    }
-    // Nova pendente entra na fila do Diretor.
-    revalidatePath('/admin/redacao');
-    revalidatePath('/admin');
-  }
-
-  revalidatePath('/jornalista');
-  revalidatePath('/jornalista/correcoes');
-  redirect('/jornalista');
+  redirect('/jornalista'); // sucesso (lança NEXT_REDIRECT, fora do try)
 }
 
 /**

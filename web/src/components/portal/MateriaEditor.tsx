@@ -74,7 +74,7 @@ export function MateriaEditor({
     }
     startTransition(async () => {
       try {
-        await salvarMateria({
+        const r = await salvarMateria({
           id: materia?.id,
           titulo,
           standfirst,
@@ -86,9 +86,13 @@ export function MateriaEditor({
           pautaId: pautaId || undefined,
           enviar,
         });
+        if (r?.erro) setErro(r.erro);
       } catch (e) {
-        // redirect() lança NEXT_REDIRECT (esperado); só mostra erros reais
-        if (e instanceof Error && !/NEXT_REDIRECT/.test(e.message)) setErro(e.message);
+        // redirect() lança NEXT_REDIRECT (sucesso). Qualquer outro erro (ex.: action
+        // mascarada pelo Next) vira mensagem amigável — nunca a tela crua de erro.
+        if (e instanceof Error && !/NEXT_REDIRECT/.test(e.message)) {
+          setErro('Não foi possível salvar agora. Tente novamente em instantes.');
+        }
       }
     });
   };

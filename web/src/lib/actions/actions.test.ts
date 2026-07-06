@@ -58,16 +58,21 @@ const payloadBase = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
-/** salvarMateria redireciona em sucesso → captura REDIRECT como "ok"; re-lança erros reais. */
-async function salvarOk(payload: Record<string, unknown>): Promise<boolean> {
+/**
+ * salvarMateria: sucesso → redirect (lança REDIRECT:/jornalista); erro tratável →
+ * retorna { erro }. Normaliza para { ok, erro } e re-lança REDIRECT de auth/inesperado.
+ */
+async function salvar(payload: Record<string, unknown>): Promise<{ ok: boolean; erro?: string }> {
   try {
-    await salvarMateria(payload as never);
-    return true;
+    const r = await salvarMateria(payload as never);
+    return r?.erro ? { ok: false, erro: r.erro } : { ok: true };
   } catch (e) {
-    if (e instanceof Error && e.message.startsWith('REDIRECT:/jornalista')) return true;
-    throw e;
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg === 'REDIRECT:/jornalista') return { ok: true };
+    throw e; // REDIRECT de auth (login/sem-acesso) ou erro inesperado
   }
 }
+const salvarOk = async (p: Record<string, unknown>) => (await salvar(p)).ok;
 
 /** cria uma matéria publicada de a-2 direto pelo repo (setup). */
 async function publicarDeA2() {
@@ -102,19 +107,39 @@ describe('salvarMateria — criação e validação', () => {
     const minhas = await repositories.materias.listMinhas('a-2');
     expect(minhas.some((m) => m.titulo === t && m.status === 'rascunho')).toBe(true);
   });
-  it('título vazio é rejeitado (Zod)', async () => {
+  it('título vazio é rejeitado (Zod) com mensagem', async () => {
     login(['jornalista']);
-    await expect(salvarMateria(payloadBase({ titulo: '   ' }) as never)).rejects.toThrow(/título/i);
+    const r = await salvar(payloadBase({ titulo: '   ' }));
+    expect(r.ok).toBe(false);
+    expect(r.erro).toMatch(/título/i);
   });
-  it('editoria inválida é rejeitada (Zod)', async () => {
+  it('editoria inválida é rejeitada (Zod) com mensagem', async () => {
     login(['jornalista']);
-    await expect(salvarMateria(payloadBase({ editoria: 'zzz' }) as never)).rejects.toThrow(/editoria/i);
+    const r = await salvar(payloadBase({ editoria: 'zzz' }));
+    expect(r.ok).toBe(false);
+    expect(r.erro).toMatch(/editoria/i);
   });
   it('bloco malformado é rejeitado (Zod discriminatedUnion)', async () => {
     login(['jornalista']);
-    await expect(
-      salvarMateria(payloadBase({ corpo: [{ type: 'paragraph' }] }) as never),
-    ).rejects.toThrow();
+    const r = await salvar(payloadBase({ corpo: [{ type: 'paragraph' }] }));
+    expect(r.ok).toBe(false);
+  });
+  it('bloco de imagem com URL externa é aceito e salva (regressão do 500)', async () => {
+    login(['jornalista']);
+    const t = titulo();
+    const r = await salvar(
+      payloadBase({
+        titulo: t,
+        editoria: 'saude',
+        corpo: [
+          { type: 'paragraph', text: 'texto' },
+          { type: 'image', url: 'https://assets.grok.com/exemplo.jpg', caption: 'legenda' },
+        ],
+      }),
+    );
+    expect(r.ok).toBe(true);
+    const minhas = await repositories.materias.listMinhas('a-2');
+    expect(minhas.some((m) => m.titulo === t)).toBe(true);
   });
 });
 
@@ -126,16 +151,15 @@ describe('salvarMateria — ownership e estado', () => {
     const draft = (await repositories.materias.listMinhas('a-2')).find((m) => m.titulo === t)!;
     // outro jornalista (autorId a-9) tenta editar
     login(['jornalista'], 'a-9');
-    await expect(
-      salvarMateria(payloadBase({ id: draft.id, titulo: 'hack' }) as never),
-    ).rejects.toThrow(/suas próprias/i);
+    const r = await salvar(payloadBase({ id: draft.id, titulo: 'hack' }));
+    expect(r.ok).toBe(false);
+    expect(r.erro).toMatch(/suas próprias/i);
   });
   it('editar publicada direto é bloqueado (só via correção)', async () => {
     const pub = await publicarDeA2();
     login(['jornalista']); // a-2, dona
-    await expect(
-      salvarMateria(payloadBase({ id: pub.id, titulo: 'edit direto' }) as never),
-    ).rejects.toThrow();
+    const r = await salvar(payloadBase({ id: pub.id, titulo: 'edit direto' }));
+    expect(r.ok).toBe(false);
   });
   it('admin ignora ownership em rascunho', async () => {
     login(['jornalista']);
@@ -144,6 +168,19 @@ describe('salvarMateria — ownership e estado', () => {
     const draft = (await repositories.materias.listMinhas('a-2')).find((m) => m.titulo === t)!;
     login(['admin'], 'a-9');
     expect(await salvarOk(payloadBase({ id: draft.id, titulo: 'admin edit' }))).toBe(true);
+  });
+});
+
+describe('salvarMateria — banco indisponível (tratamento gracioso)', () => {
+  it('timeout de conexão do Aurora vira mensagem amigável, não tela crua', async () => {
+    login(['jornalista']);
+    const spy = vi
+      .spyOn(repositories.materias, 'criar')
+      .mockRejectedValueOnce(new Error('timeout exceeded when trying to connect'));
+    const r = await salvar(payloadBase());
+    expect(r.ok).toBe(false);
+    expect(r.erro).toMatch(/não foi possível|ocupado|tente novamente/i);
+    spy.mockRestore();
   });
 });
 
