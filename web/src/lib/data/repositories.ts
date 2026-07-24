@@ -1,7 +1,6 @@
 /**
  * Contrato `repositories` — a ÚNICA porta de dados que a UI conhece (CLAUDE.md §3/§5).
- * A implementação atual é MOCK (prompt 02). Nos prompts 06–07 troca por Aurora (Prisma)
- * SEM mudar a UI. Ver docs/DATA_MODEL.md §3.
+ * Implementação: mock (local) ou Aurora quando `LUPA_USE_AURORA=true`.
  */
 import type {
   Author,
@@ -19,6 +18,7 @@ import type {
   Paged,
   CriarMateriaInput,
   CreateMediaInput,
+  EnsureAuthorInput,
   AdCreative,
   AdCampaign,
   AdMetrics,
@@ -28,6 +28,8 @@ import type {
   RelatorioResultado,
 } from '@/types';
 import { createMockRepositories } from './mock';
+import { createAuroraRepositories } from './aurora';
+import { useAurora } from './aurora/client';
 
 export interface Repositories {
   materias: {
@@ -42,7 +44,7 @@ export interface Repositories {
     listPendentes(opts?: PageOpts): Promise<Paged<Materia>>;
     criar(input: CriarMateriaInput): Promise<Materia>;
     atualizar(id: string, input: Partial<CriarMateriaInput>): Promise<Materia>;
-    enviarParaRevisao(id: string): Promise<Materia>; // aplica modo automático se ativo
+    enviarParaRevisao(id: string): Promise<Materia>;
     aprovar(id: string, revisorId: string, agendadoPara?: string): Promise<Materia>;
     recusar(id: string, revisorId: string, justificativa: string): Promise<Materia>;
     listRevisoes(materiaId: string): Promise<RevisaoMateria[]>;
@@ -64,7 +66,7 @@ export interface Repositories {
     listPlayShelf(): Promise<Playlist[]>;
     listCortes(opts?: PageOpts): Promise<Paged<Media>>;
     getNext(id: string, limit?: number): Promise<Media[]>;
-    criarUpload(input: CreateMediaInput): Promise<Media>; // liga ao upload S3
+    criarUpload(input: CreateMediaInput): Promise<Media>;
   };
   ads: {
     servir(slot: AdSlotId): Promise<AdCreative | null>;
@@ -85,11 +87,19 @@ export interface Repositories {
   };
   authors: {
     getById(id: string): Promise<Author | null>;
+    ensureFromCognito(input: EnsureAuthorInput): Promise<Author>;
   };
 }
 
+function createRepositories(): Repositories {
+  if (useAurora()) {
+    return createAuroraRepositories();
+  }
+  return createMockRepositories();
+}
+
 /**
- * Singleton de dados usado por toda a UI. Hoje = mock; a troca para Aurora acontece
- * aqui (uma linha), sem tocar em nenhum componente.
+ * Singleton de dados usado por toda a UI.
+ * Em AWS: LUPA_USE_AURORA=true → Aurora. Local: mock.
  */
-export const repositories: Repositories = createMockRepositories();
+export const repositories: Repositories = createRepositories();

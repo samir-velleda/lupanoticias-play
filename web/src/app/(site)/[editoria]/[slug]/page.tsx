@@ -13,18 +13,23 @@ interface Props {
   params: Promise<{ editoria: string; slug: string }>;
 }
 
-// Enumera as matérias publicadas (editoria+slug). Slug fora da lista → 404 real.
-// (Na fase Aurora, prompt 06, vira dynamicParams=true + revalidação/ISR.)
-export const dynamicParams = false;
+// Matérias novas (pós-aprovação no Aurora) precisam de rotas dinâmicas.
+// generateStaticParams ainda pré-gera o seed para cold start; o resto resolve on-demand.
+export const dynamicParams = true;
 export async function generateStaticParams() {
-  const listas = await Promise.all(
-    EDITORIA_SLUGS.map((editoria) =>
-      repositories.materias.listByEditoria(editoria, { pageSize: 100 }),
-    ),
-  );
-  return listas.flatMap((paged, i) =>
-    paged.items.map((m) => ({ editoria: EDITORIA_SLUGS[i], slug: m.slug })),
-  );
+  try {
+    const listas = await Promise.all(
+      EDITORIA_SLUGS.map((editoria) =>
+        repositories.materias.listByEditoria(editoria, { pageSize: 100 }),
+      ),
+    );
+    return listas.flatMap((paged, i) =>
+      paged.items.map((m) => ({ editoria: EDITORIA_SLUGS[i], slug: m.slug })),
+    );
+  } catch {
+    // Build local sem Aurora: sem paths estáticos (tudo dinâmico).
+    return [];
+  }
 }
 
 async function carregar(editoria: string, slug: string) {
@@ -151,6 +156,7 @@ export default async function MateriaPage({ params }: Props) {
       <div className="mx-auto max-w-[1000px] px-6 sm:px-10">
         <Cover
           label={materia.heroCaption ?? materia.titulo}
+          src={materia.heroImageUrl}
           rounded="rounded-md"
           className="h-[300px] w-full sm:h-[520px]"
         />

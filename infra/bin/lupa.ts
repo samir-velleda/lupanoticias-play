@@ -61,8 +61,9 @@ new LupaAuthStack(app, stackName('Auth', envName), {
 
 // Web (SSR/API em Lambda + CloudFront). Importa recursos via SSM lookup —
 // sem depender/alterar as outras stacks. Domínio custom via contexto (opcional).
+// VPC + app-sg: acesso Aurora (já liberado no db-sg do Network).
 const domainNamesCtx = app.node.tryGetContext('webDomainNames') as string | undefined;
-new LupaWebStack(app, stackName('Web', envName), {
+const web = new LupaWebStack(app, stackName('Web', envName), {
   env,
   envName,
   description: `Lupa Next SSR/API (Lambda Web Adapter) + CloudFront (${envName}).`,
@@ -72,7 +73,11 @@ new LupaWebStack(app, stackName('Web', envName), {
   domainNames: domainNamesCtx
     ? domainNamesCtx.split(',').map((d) => d.trim()).filter(Boolean)
     : undefined,
+  vpc: network.vpc,
+  appSecurityGroup: network.appSecurityGroup,
 });
+web.addDependency(network);
+web.addDependency(data);
 
 // Tags obrigatórias + auditoria de naming em toda a árvore do app.
 applyLupaTags(app, envName);

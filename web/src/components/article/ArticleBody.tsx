@@ -49,7 +49,12 @@ export function ArticleBody({
           case 'image':
             return (
               <figure key={i} className="my-6">
-                <Cover label={block.caption ?? 'Imagem da matéria'} rounded="rounded-md" className="h-[300px] w-full" />
+                <Cover
+                  label={block.caption ?? 'Imagem da matéria'}
+                  src={block.url || undefined}
+                  rounded="rounded-md"
+                  className="h-[300px] w-full"
+                />
                 {block.caption ? (
                   <figcaption className="mt-2.5 font-mono text-[11.5px] text-gray-300">
                     {block.caption}

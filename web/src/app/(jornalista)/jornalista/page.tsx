@@ -24,7 +24,7 @@ export default async function MinhasMaterias({
   const { status } = await searchParams;
   const filtro = FILTROS.find((f) => f.key === status) ?? FILTROS[0];
   const usuario = await getUsuarioAtual();
-  const autorId = usuario ? autorIdDoUsuario(usuario) : 'a-2';
+  const autorId = usuario ? await autorIdDoUsuario(usuario) : 'a-2';
   const materias = await repositories.materias.listMinhas(autorId, filtro.status);
 
   return (

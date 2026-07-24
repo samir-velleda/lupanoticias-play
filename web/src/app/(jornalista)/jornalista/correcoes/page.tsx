@@ -12,7 +12,7 @@ const EM_CORRECAO: StatusMateria[] = ['recusada', 'em_correcao'];
 
 export default async function Correcoes() {
   const usuario = await getUsuarioAtual();
-  const autorId = usuario ? autorIdDoUsuario(usuario) : 'a-2';
+  const autorId = usuario ? await autorIdDoUsuario(usuario) : 'a-2';
   const todas = await repositories.materias.listMinhas(autorId);
   const materias = todas.filter((m) => EM_CORRECAO.includes(m.status));
 

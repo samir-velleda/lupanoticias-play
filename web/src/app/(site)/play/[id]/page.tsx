@@ -15,9 +15,8 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
-// IDs de mídia são conhecidos (mock) → 404 real p/ id inválido. Vira dynamicParams=true
-// quando o Aurora/Estúdio (prompts 05/07) passarem a criar mídias em runtime.
-export const dynamicParams = false;
+// IDs de mídia novos (Estúdio/Aurora) resolvem on-demand.
+export const dynamicParams = true;
 export async function generateStaticParams() {
   const tipos: MediaTipo[] = ['video', 'podcast', 'live', 'short'];
   const listas = await Promise.all(

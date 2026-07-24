@@ -142,7 +142,9 @@ export function createMockRepositories(): Repositories {
       },
       async criar(input: CriarMateriaInput) {
         const autor: Author =
-          authors.find((a) => a.papel === 'jornalista') ?? authors[0];
+          (input.autorId ? authors.find((a) => a.id === input.autorId) : undefined) ??
+          authors.find((a) => a.papel === 'jornalista') ??
+          authors[0];
         const nova: Materia = {
           id: nextId('m'),
           slug: slugify(input.titulo),
@@ -167,8 +169,13 @@ export function createMockRepositories(): Repositories {
       async atualizar(id: string, input: Partial<CriarMateriaInput>) {
         const m = _materias.find((x) => x.id === id);
         if (!m) throw new Error(`Matéria ${id} não encontrada`);
-        Object.assign(m, input, { updatedAt: agora() });
+        const { autorId, ...rest } = input;
+        Object.assign(m, rest, { updatedAt: agora() });
         if (input.titulo) m.slug = slugify(input.titulo);
+        if (autorId) {
+          const autor = authors.find((a) => a.id === autorId);
+          if (autor) m.autores = [autor];
+        }
         return clone(m);
       },
       async enviarParaRevisao(id: string) {
@@ -424,6 +431,14 @@ export function createMockRepositories(): Repositories {
     authors: {
       async getById(id: string) {
         return clone(authors.find((a) => a.id === id)) ?? null;
+      },
+      async ensureFromCognito(input) {
+        // Mock: reutiliza autor demo por papel (sem Cognito real local).
+        const porPapel =
+          authors.find((a) => a.papel === input.papel) ??
+          authors.find((a) => a.papel === 'jornalista') ??
+          authors[0];
+        return clone({ ...porPapel, nome: input.nome ?? porPapel.nome });
       },
     },
   };

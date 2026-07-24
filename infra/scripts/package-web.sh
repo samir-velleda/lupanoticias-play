@@ -5,6 +5,7 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # infra/
+ROOT="$(cd "$HERE/.." && pwd)"
 WEB="$(cd "$HERE/../web" && pwd)"
 OUT="$HERE/assets/lupa-web"
 STANDALONE="$WEB/.next/standalone"
@@ -18,39 +19,52 @@ mkdir -p "$OUT"
 
 # 1) Copia o standalone INTEIRO. Com npm workspaces + outputFileTracingRoot=raiz,
 #    o Next gera: standalone/node_modules (deps içados) + standalone/web/server.js.
-#    Preservamos a estrutura e localizamos o server.js para montar o run.sh.
 cp -R "$STANDALONE/." "$OUT/"
 
-REL="$(cd "$OUT" && find . -maxdepth 2 -name server.js | head -1 | sed 's|^\./||')"  # ex: web/server.js ou server.js
+REL="$(cd "$OUT" && find . -maxdepth 2 -name server.js | head -1 | sed 's|^\./||')"  # ex: web/server.js
 if [ -z "$REL" ]; then echo "[package-web] ERRO: server.js não encontrado no standalone"; exit 1; fi
 SRVDIR="$(dirname "$REL")"   # ex: web  (ou "." se layout flat)
 
-# 2) Assets do cliente e públicos, ao lado do server.js (server serve a partir de __dirname)
+# 2) Assets do cliente e públicos, ao lado do server.js
 mkdir -p "$OUT/$SRVDIR/.next"
 cp -R "$WEB/.next/static" "$OUT/$SRVDIR/.next/static"
 if [ -d "$WEB/public" ]; then cp -R "$WEB/public" "$OUT/$SRVDIR/public"; fi
 
-# 3) Vendora deps de runtime de SERVIDOR que o tracing do standalone (Turbopack +
-#    monorepo) às vezes não inclui. Todos zero-dependência. `@aws-sdk/*` NÃO é
-#    vendorado: o runtime do Lambda Node 20 já o fornece.
+# 3) Vendora deps de runtime externas (pg + zero-dep). NÃO rodar npm install no artefato.
 mkdir -p "$OUT/$SRVDIR/node_modules"
-for dep in zod aws-jwt-verify server-only; do
-  dest="$OUT/$SRVDIR/node_modules/$dep"
-  if [ ! -d "$dest" ]; then
-    src=""
-    for base in "$WEB/node_modules/$dep" "$WEB/../node_modules/$dep"; do
-      [ -d "$base" ] && { src="$base"; break; }
-    done
-    if [ -n "$src" ]; then cp -R "$src" "$dest"; echo "[package-web] vendored: $dep"; \
-    else echo "[package-web] AVISO: dep de runtime não encontrado: $dep"; fi
+copy_dep() {
+  local dep="$1"
+  local dest="$OUT/$SRVDIR/node_modules/$dep"
+  if [ -d "$dest" ]; then return 0; fi
+  local src=""
+  for base in "$WEB/node_modules/$dep" "$ROOT/node_modules/$dep" "$OUT/node_modules/$dep"; do
+    if [ -d "$base" ]; then src="$base"; break; fi
+  done
+  if [ -z "$src" ]; then
+    echo "[package-web] AVISO: dep de runtime não encontrado: $dep"
+    return 0
   fi
+  mkdir -p "$(dirname "$dest")"
+  cp -R "$src" "$dest"
+  # Evita lixo aninhado / devDeps acidentais
+  rm -rf "$dest/node_modules" 2>/dev/null || true
+  echo "[package-web] vendored: $dep"
+}
+
+for dep in \
+  zod aws-jwt-verify server-only \
+  pg pg-connection-string pg-pool pg-protocol pg-types pgpass \
+  postgres-array postgres-bytea postgres-date postgres-interval \
+  pg-int8 pg-cloudflare split2 xtend
+do
+  copy_dep "$dep"
 done
 
 # 4) Remove sharp (binário nativo por-plataforma; imagens unoptimized → nunca usado)
 rm -rf "$OUT/node_modules/sharp" "$OUT/node_modules/@img" \
        "$OUT/$SRVDIR/node_modules/sharp" "$OUT/$SRVDIR/node_modules/@img"
 
-# 4) bootstrap do LWA: handler = run.sh que sobe o servidor Next na porta do adapter
+# 5) bootstrap do LWA
 cat > "$OUT/run.sh" <<SH
 #!/bin/bash
 exec node $REL

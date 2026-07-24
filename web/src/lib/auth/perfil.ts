@@ -1,12 +1,23 @@
+import type { Papel } from '@/types';
 import type { Usuario } from './session';
+import { repositories } from '@/lib/data/repositories';
+
+function papelPrincipal(u: Usuario): Papel {
+  if (u.grupos.includes('admin')) return 'admin';
+  if (u.grupos.includes('diretor')) return 'diretor';
+  return 'jornalista';
+}
 
 /**
- * Mapeia o usuário Cognito para um autor do domínio.
- * MOCK por ora (a ligação real por `cognito_sub` entra no prompt 07 / Bloco 5).
- * Até lá, o portal do jornalista opera sobre um autor de demonstração.
+ * Resolve (e cria se preciso) o `author.id` a partir do Cognito sub.
+ * Em mock, devolve o autor demo do papel correspondente.
  */
-const AUTOR_DEMO = 'a-2';
-
-export function autorIdDoUsuario(_u: Usuario): string {
-  return AUTOR_DEMO;
+export async function autorIdDoUsuario(u: Usuario): Promise<string> {
+  const author = await repositories.authors.ensureFromCognito({
+    sub: u.sub,
+    nome: u.nome,
+    email: u.email,
+    papel: papelPrincipal(u),
+  });
+  return author.id;
 }

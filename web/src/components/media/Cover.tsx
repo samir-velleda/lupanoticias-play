@@ -1,20 +1,32 @@
 import { LupaMark } from '@/components/brand';
 
 /**
- * Placeholder de imagem monocromático (as imagens reais virão do CMS/upload — DESIGN_SPEC).
- * `role="img"` + aria-label garante acessibilidade sem asset real.
+ * Capa de imagem: usa `src` quando houver URL real; senão placeholder monocromático.
  */
 export function Cover({
   label,
+  src,
   tone = 'light',
   rounded = 'rounded',
   className = '',
 }: {
   label: string;
+  src?: string;
   tone?: 'light' | 'dark';
   rounded?: string;
   className?: string;
 }) {
+  if (src) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={src}
+        alt={label}
+        className={`object-cover ${rounded} ${className}`}
+      />
+    );
+  }
+
   const bg =
     tone === 'dark'
       ? 'bg-gradient-to-br from-dark-line to-ink'

@@ -16,6 +16,7 @@ import * as ssm from 'aws-cdk-lib/aws-ssm';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 import { LupaEnv, resourceName, ssmPrefix } from './config';
 
@@ -29,6 +30,10 @@ export interface LupaWebStackProps extends StackProps {
   readonly domainNames?: string[];
   /** ARN do certificado ACM (us-east-1) do domínio custom (opcional). */
   readonly certificateArn?: string;
+  /** VPC isolada do Lupa (acesso Aurora). */
+  readonly vpc?: ec2.IVpc;
+  /** SG do app (já liberado no db-sg do Network). */
+  readonly appSecurityGroup?: ec2.ISecurityGroup;
 }
 
 // Default: layer LWA mais recente em us-east-1 (conta pública da AWS).
@@ -83,6 +88,9 @@ export class LupaWebStack extends Stack {
       LUPA_COGNITO_DOMAIN: ssm.StringParameter.valueForStringParameter(this, `${ssmBase}/cognito/domain-base`),
       LUPA_AURORA_SECRET_ARN: ssm.StringParameter.valueForStringParameter(this, `${ssmBase}/aurora/secret-arn`),
       LUPA_AURORA_ENDPOINT: ssm.StringParameter.valueForStringParameter(this, `${ssmBase}/aurora/endpoint`),
+      LUPA_AURORA_DB_NAME: 'lupa',
+      // Liga repositório Aurora (schema/seed sob demanda no primeiro request).
+      LUPA_USE_AURORA: 'true',
     };
 
     // --- Lambda: Next standalone + LWA ---
@@ -103,7 +111,28 @@ export class LupaWebStack extends Stack {
       memorySize: 1024,
       timeout: Duration.seconds(30),
       environment: appEnv,
+      // VPC do projeto (PRIVATE_WITH_EGRESS) — acesso TCP ao Aurora; NAT para Cognito/SM.
+      ...(props.vpc
+        ? {
+            vpc: props.vpc,
+            vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+            securityGroups: props.appSecurityGroup ? [props.appSecurityGroup] : undefined,
+            allowPublicSubnet: false,
+          }
+        : {}),
     });
+
+    // Leitura do segredo Aurora (somente recurso lupa).
+    const auroraSecretArn = ssm.StringParameter.valueForStringParameter(
+      this,
+      `${ssmBase}/aurora/secret-arn`,
+    );
+    fn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['secretsmanager:GetSecretValue'],
+        resources: [auroraSecretArn],
+      }),
+    );
 
     // Admin do Cognito (portal /admin/usuarios): listar/criar usuários e atribuir grupos,
     // escopado ao User Pool do projeto. (Sem AdminDeleteUser — nada de deleção.)

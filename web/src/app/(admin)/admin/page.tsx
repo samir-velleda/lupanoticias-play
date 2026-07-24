@@ -63,9 +63,21 @@ export default async function AdminDashboard() {
           ) : (
             <ul className="space-y-3">
               {pendentes.items.slice(0, 5).map((m) => (
-                <li key={m.id} className="flex items-center gap-2">
-                  <StatusBadge status={m.status} />
-                  <span className="font-display text-sm font-semibold text-ink">{m.titulo}</span>
+                <li key={m.id} className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-2">
+                    <StatusBadge status={m.status} />
+                    <Link
+                      href={`/admin/redacao/${m.id}`}
+                      className="font-display text-sm font-semibold text-ink hover:underline"
+                    >
+                      {m.titulo}
+                    </Link>
+                  </div>
+                  {m.standfirst ? (
+                    <p className="line-clamp-1 pl-[4.5rem] font-serif text-[13px] text-gray-500">
+                      {m.standfirst}
+                    </p>
+                  ) : null}
                 </li>
               ))}
             </ul>

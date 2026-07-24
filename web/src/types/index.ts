@@ -240,6 +240,15 @@ export interface CriarMateriaInput {
   heroCaption?: string;
   pautaId?: string;
   agendadoPara?: string;
+  /** Autor real (Cognito → author.id). Obrigatório ao criar no Aurora. */
+  autorId?: string;
+}
+
+export interface EnsureAuthorInput {
+  sub: string;
+  nome?: string;
+  email?: string;
+  papel: Papel;
 }
 
 export interface CreateMediaInput {
