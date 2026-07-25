@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { EditoriaSlug, Media } from '@/types';
 import { repositories } from '@/lib/data/repositories';
-import { editoriaNome, isEditoriaSlug, EDITORIA_SLUGS } from '@/lib/editorias';
+import { editoriaNome, isEditoriaSlug } from '@/lib/editorias';
 import { formatData, formatRelativo } from '@/lib/format';
 import { Avatar, Tag, Kicker } from '@/components/ui';
 import { Cover } from '@/components/media/Cover';
@@ -13,24 +13,10 @@ interface Props {
   params: Promise<{ editoria: string; slug: string }>;
 }
 
-// Matérias novas (pós-aprovação no Aurora) precisam de rotas dinâmicas.
-// generateStaticParams ainda pré-gera o seed para cold start; o resto resolve on-demand.
+// 100% dinâmico no Lambda: sem generateStaticParams (evita prerender em /var/task).
+export const dynamic = 'force-dynamic';
 export const dynamicParams = true;
-export async function generateStaticParams() {
-  try {
-    const listas = await Promise.all(
-      EDITORIA_SLUGS.map((editoria) =>
-        repositories.materias.listByEditoria(editoria, { pageSize: 100 }),
-      ),
-    );
-    return listas.flatMap((paged, i) =>
-      paged.items.map((m) => ({ editoria: EDITORIA_SLUGS[i], slug: m.slug })),
-    );
-  } catch {
-    // Build local sem Aurora: sem paths estáticos (tudo dinâmico).
-    return [];
-  }
-}
+export const revalidate = 0;
 
 async function carregar(editoria: string, slug: string) {
   if (!isEditoriaSlug(editoria)) return null;
@@ -203,7 +189,12 @@ export default async function MateriaPage({ params }: Props) {
             {relacionadas.map((m) => (
               <article key={m.id}>
                 <Link href={`/${m.editoria}/${m.slug}`}>
-                  <Cover label={m.titulo} rounded="rounded-sm" className="h-[150px] w-full" />
+                  <Cover
+                    label={m.titulo}
+                    src={m.heroImageUrl}
+                    rounded="rounded-sm"
+                    className="h-[150px] w-full"
+                  />
                 </Link>
                 <Kicker className="mt-3 block">{editoriaNome(m.editoria)}</Kicker>
                 <h3 className="mt-1.5 font-display text-[17px] font-bold leading-tight text-ink">

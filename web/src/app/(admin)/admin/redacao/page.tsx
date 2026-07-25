@@ -6,6 +6,8 @@ import { exigirGrupo } from '@/lib/auth/session';
 import { StatusBadge } from '@/components/portal/StatusBadge';
 import { EmptyState } from '@/components/ui';
 
+export const dynamic = 'force-dynamic';
+
 export default async function RedacaoFila() {
   await exigirGrupo('admin', 'diretor');
   const pendentes = await repositories.materias.listPendentes({ pageSize: 50 });

@@ -14,6 +14,12 @@ import {
 } from '../mock/data';
 
 export async function seedIfEmpty(): Promise<void> {
+  // Produção: só schema + editorias mínimas (sem matérias fictícias).
+  if (process.env.LUPA_SKIP_SEED === 'true' || process.env.LUPA_ENV === 'prod') {
+    await seedEditoriasOnly();
+    return;
+  }
+
   const { rows } = await query<{ n: string }>('SELECT COUNT(*)::text AS n FROM editoria');
   if (Number(rows[0]?.n ?? 0) > 0) return;
 
@@ -150,4 +156,14 @@ export async function seedIfEmpty(): Promise<void> {
       throw e;
     }
   });
+}
+
+/** Prod: apenas editorias canônicas (sem matérias/mídia de demo). */
+async function seedEditoriasOnly(): Promise<void> {
+  for (const e of editorias) {
+    await query(
+      `INSERT INTO editoria (slug, nome, descricao) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING`,
+      [e.slug, e.nome, e.descricao],
+    );
+  }
 }

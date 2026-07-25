@@ -14,6 +14,7 @@ const NAV_ADMIN = [
 const NAV_DIRETOR = [
   { href: '/admin', label: 'Painel' },
   { href: '/admin/redacao', label: 'Fila de aprovação' },
+  { href: '/admin/configuracoes', label: 'Modo automático' },
   { href: '/admin/relatorios', label: 'Relatórios' },
 ];
 

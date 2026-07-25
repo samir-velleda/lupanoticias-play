@@ -1,7 +1,13 @@
 'use client';
 
-/** Boundary de erro do site público (estado de erro — DESIGN_SPEC §7). */
-export default function SiteError({ reset }: { error: Error; reset: () => void }) {
+/** Boundary de erro do site público. */
+export default function SiteError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col items-center gap-4 px-5 py-24 text-center">
       <span className="font-mono text-[11px] uppercase tracking-kicker text-gray-400">
@@ -13,6 +19,9 @@ export default function SiteError({ reset }: { error: Error; reset: () => void }
       <p className="max-w-md font-serif text-[15px] text-gray-500">
         Tente novamente em instantes. Se o problema continuar, volte à página inicial.
       </p>
+      {error.digest ? (
+        <p className="font-mono text-[11px] text-gray-400">ref: {error.digest}</p>
+      ) : null}
       <button
         type="button"
         onClick={reset}

@@ -309,6 +309,9 @@ export function createAuroraRepositories(): Repositories {
         const slug = await uniqueSlug(input.editoria, slugify(input.titulo));
         const agora = new Date().toISOString();
         const autorId = input.autorId;
+        if (!autorId) {
+          throw new Error('autorId é obrigatório ao criar matéria.');
+        }
         await withClient(async (c) => {
           await c.query('BEGIN');
           try {
@@ -332,12 +335,10 @@ export function createAuroraRepositories(): Repositories {
                 input.agendadoPara ?? null,
               ],
             );
-            if (autorId) {
-              await c.query(
-                `INSERT INTO materia_autor (materia_id, author_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`,
-                [id, autorId],
-              );
-            }
+            await c.query(
+              `INSERT INTO materia_autor (materia_id, author_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`,
+              [id, autorId],
+            );
             await c.query('COMMIT');
           } catch (e) {
             await c.query('ROLLBACK');
@@ -395,6 +396,13 @@ export function createAuroraRepositories(): Repositories {
         await ready();
         const m = await getMateriaById(id);
         if (!m) throw new Error(`Matéria ${id} não encontrada`);
+        const okEnvio = ['rascunho', 'pendente', 'recusada', 'em_correcao'].includes(m.status);
+        if (!okEnvio) {
+          throw new Error(`Não é possível enviar para revisão com status "${m.status}".`);
+        }
+        if (!m.corpo?.length || !m.titulo?.trim()) {
+          throw new Error('Matéria incompleta: título e corpo são obrigatórios.');
+        }
         const { rows: modo } = await query<{ ativo: boolean }>(
           `SELECT ativo FROM modo_automatico WHERE categoria = $1`,
           [m.editoria],
@@ -418,23 +426,38 @@ export function createAuroraRepositories(): Repositories {
       },
       async aprovar(id, revisorId, agendadoPara) {
         await ready();
-        const agora = new Date().toISOString();
-        if (agendadoPara) {
-          await query(
-            `UPDATE materia SET status = 'aprovada', agendado_para = $2, updated_at = $3 WHERE id = $1`,
-            [id, agendadoPara, agora],
-          );
-        } else {
-          await query(
-            `UPDATE materia SET status = 'publicada', published_at = $2, updated_at = $2 WHERE id = $1`,
-            [id, agora],
-          );
+        const cur = await getMateriaById(id);
+        if (!cur) throw new Error(`Matéria ${id} não encontrada`);
+        if (cur.status === 'publicada') return cur;
+        if (cur.status !== 'pendente' && cur.status !== 'aprovada') {
+          throw new Error(`Só é possível aprovar matérias pendentes (status atual: ${cur.status}).`);
         }
-        await query(
-          `INSERT INTO revisao_materia (id, materia_id, revisor_id, decisao, criado_em)
-           VALUES ($1,$2,$3,'aprovada',$4)`,
-          [`rev-${randomUUID()}`, id, revisorId, agora],
-        );
+        const agora = new Date().toISOString();
+        await withClient(async (c) => {
+          await c.query('BEGIN');
+          try {
+            if (agendadoPara) {
+              await c.query(
+                `UPDATE materia SET status = 'aprovada', agendado_para = $2, updated_at = $3 WHERE id = $1`,
+                [id, agendadoPara, agora],
+              );
+            } else {
+              await c.query(
+                `UPDATE materia SET status = 'publicada', published_at = $2, updated_at = $2 WHERE id = $1`,
+                [id, agora],
+              );
+            }
+            await c.query(
+              `INSERT INTO revisao_materia (id, materia_id, revisor_id, decisao, criado_em)
+               VALUES ($1,$2,$3,'aprovada',$4)`,
+              [`rev-${randomUUID()}`, id, revisorId, agora],
+            );
+            await c.query('COMMIT');
+          } catch (e) {
+            await c.query('ROLLBACK');
+            throw e;
+          }
+        });
         const m = await getMateriaById(id);
         if (!m) throw new Error(`Matéria ${id} não encontrada`);
         return m;
@@ -444,16 +467,47 @@ export function createAuroraRepositories(): Repositories {
           throw new Error('Justificativa é obrigatória para recusar uma matéria.');
         }
         await ready();
+        const cur = await getMateriaById(id);
+        if (!cur) throw new Error(`Matéria ${id} não encontrada`);
+        if (cur.status === 'recusada' || cur.status === 'em_correcao') return cur;
+        if (cur.status !== 'pendente') {
+          throw new Error(`Só é possível recusar matérias pendentes (status atual: ${cur.status}).`);
+        }
         const agora = new Date().toISOString();
-        await query(`UPDATE materia SET status = 'recusada', updated_at = $2 WHERE id = $1`, [
+        await withClient(async (c) => {
+          await c.query('BEGIN');
+          try {
+            await c.query(`UPDATE materia SET status = 'recusada', updated_at = $2 WHERE id = $1`, [
+              id,
+              agora,
+            ]);
+            await c.query(
+              `INSERT INTO revisao_materia (id, materia_id, revisor_id, decisao, justificativa, criado_em)
+               VALUES ($1,$2,$3,'recusada',$4,$5)`,
+              [`rev-${randomUUID()}`, id, revisorId, justificativa.trim(), agora],
+            );
+            await c.query('COMMIT');
+          } catch (e) {
+            await c.query('ROLLBACK');
+            throw e;
+          }
+        });
+        const m = await getMateriaById(id);
+        if (!m) throw new Error(`Matéria ${id} não encontrada`);
+        return m;
+      },
+      async marcarEmCorrecao(id) {
+        await ready();
+        const cur = await getMateriaById(id);
+        if (!cur) throw new Error(`Matéria ${id} não encontrada`);
+        if (cur.status !== 'recusada' && cur.status !== 'em_correcao') {
+          return cur;
+        }
+        const agora = new Date().toISOString();
+        await query(`UPDATE materia SET status = 'em_correcao', updated_at = $2 WHERE id = $1`, [
           id,
           agora,
         ]);
-        await query(
-          `INSERT INTO revisao_materia (id, materia_id, revisor_id, decisao, justificativa, criado_em)
-           VALUES ($1,$2,$3,'recusada',$4,$5)`,
-          [`rev-${randomUUID()}`, id, revisorId, justificativa.trim(), agora],
-        );
         const m = await getMateriaById(id);
         if (!m) throw new Error(`Matéria ${id} não encontrada`);
         return m;

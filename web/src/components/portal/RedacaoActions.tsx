@@ -1,44 +1,61 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
 import { aprovarMateria, recusarMateria } from '@/lib/actions/materias';
+import { isNextControlFlowError } from '@/lib/next-errors';
 
 /** Aprovar / recusar matéria na fila do Diretor de Redação. */
 export function RedacaoActions({ materiaId }: { materiaId: string }) {
-  const router = useRouter();
   const [justificativa, setJustificativa] = useState('');
   const [erro, setErro] = useState('');
+  const [okMsg, setOkMsg] = useState('');
   const [mostrarRecusa, setMostrarRecusa] = useState(false);
   const [pending, startTransition] = useTransition();
 
+  const irFila = () => {
+    // Hard navigation: evita cache RSC stale no Lambda após mutação.
+    window.location.assign('/admin/redacao');
+  };
+
   const aprovar = () => {
     setErro('');
+    setOkMsg('');
     startTransition(async () => {
-      const r = await aprovarMateria(materiaId);
-      if (!r.ok) {
-        setErro(r.erro ?? 'Falha ao aprovar');
-        return;
+      try {
+        const r = await aprovarMateria(materiaId);
+        if (!r.ok) {
+          setErro(r.erro ?? 'Falha ao aprovar');
+          return;
+        }
+        setOkMsg('Matéria aprovada e publicada.');
+        irFila();
+      } catch (e) {
+        if (isNextControlFlowError(e)) return;
+        setErro(e instanceof Error && e.message ? e.message : 'Falha ao aprovar');
       }
-      router.push('/admin/redacao');
-      router.refresh();
     });
   };
 
   const recusar = () => {
     setErro('');
+    setOkMsg('');
     if (!justificativa.trim()) {
       setErro('Informe a justificativa da recusa.');
       return;
     }
     startTransition(async () => {
-      const r = await recusarMateria(materiaId, justificativa);
-      if (!r.ok) {
-        setErro(r.erro ?? 'Falha ao recusar');
-        return;
+      try {
+        const r = await recusarMateria(materiaId, justificativa);
+        if (!r.ok) {
+          setErro(r.erro ?? 'Falha ao recusar');
+          return;
+        }
+        setOkMsg('Matéria recusada. O jornalista verá a justificativa.');
+        irFila();
+      } catch (e) {
+        if (isNextControlFlowError(e)) return;
+        setErro(e instanceof Error && e.message ? e.message : 'Falha ao recusar');
       }
-      router.push('/admin/redacao');
-      router.refresh();
     });
   };
 
@@ -48,8 +65,13 @@ export function RedacaoActions({ materiaId }: { materiaId: string }) {
         Decisão editorial
       </div>
       {erro ? (
-        <p className="rounded border border-ink bg-surface-2 px-3 py-2 font-mono text-[11px] text-ink">
+        <p className="rounded border border-ink bg-surface-2 px-3 py-2 font-mono text-[11px] text-ink" role="alert">
           {erro}
+        </p>
+      ) : null}
+      {okMsg ? (
+        <p className="rounded border border-line bg-surface-2 px-3 py-2 font-mono text-[11px] text-gray-700">
+          {okMsg}
         </p>
       ) : null}
       <div className="flex flex-wrap gap-2">

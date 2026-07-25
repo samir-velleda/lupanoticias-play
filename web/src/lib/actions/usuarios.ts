@@ -1,9 +1,9 @@
 'use server';
 
 import { z } from 'zod';
-import { revalidatePath } from 'next/cache';
 import { exigirGrupo } from '@/lib/auth/session';
 import { criarUsuario } from '@/lib/auth/admin';
+import { isNextControlFlowError, mensagemErro, safeRevalidatePath } from '@/lib/cache-safe';
 import type { Papel } from '@/types';
 
 const schema = z.object({
@@ -33,9 +33,10 @@ export async function criarUsuarioAction(
   }
   try {
     await criarUsuario(parsed.data.email, parsed.data.nome, parsed.data.grupo as Papel);
-    revalidatePath('/admin/usuarios');
+    safeRevalidatePath('/admin/usuarios');
     return { ok: true };
   } catch (e) {
-    return { ok: false, erro: e instanceof Error ? e.message : 'Falha ao criar usuário' };
+    if (isNextControlFlowError(e)) throw e;
+    return { ok: false, erro: mensagemErro(e, 'Falha ao criar usuário') };
   }
 }

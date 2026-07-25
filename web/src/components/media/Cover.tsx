@@ -1,7 +1,11 @@
+'use client';
+
+import { useState } from 'react';
 import { LupaMark } from '@/components/brand';
 
 /**
- * Capa de imagem: usa `src` quando houver URL real; senão placeholder monocromático.
+ * Capa de imagem: usa `src` quando houver URL real e carregar;
+ * senão placeholder monocromático (evita ícone quebrado).
  */
 export function Cover({
   label,
@@ -16,13 +20,17 @@ export function Cover({
   rounded?: string;
   className?: string;
 }) {
-  if (src) {
+  const resolved = resolvePublicSrc(src);
+  const [failed, setFailed] = useState(false);
+
+  if (resolved && !failed) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={src}
+        src={resolved}
         alt={label}
         className={`object-cover ${rounded} ${className}`}
+        onError={() => setFailed(true)}
       />
     );
   }
@@ -41,4 +49,15 @@ export function Cover({
       <LupaMark className={`h-1/3 max-h-16 w-auto ${mark}`} title={label} />
     </div>
   );
+}
+
+/** Paths de seed fictício ou vazios → undefined (placeholder). */
+function resolvePublicSrc(src?: string): string | undefined {
+  if (!src?.trim()) return undefined;
+  const s = src.trim();
+  if (s.startsWith('/media/cover-') || s.startsWith('/avatars/')) return undefined;
+  if (s.startsWith('http://') || s.startsWith('https://')) return s;
+  // relativo /media/* sem host: não confiar no web CDN
+  if (s.startsWith('/media/')) return undefined;
+  return s;
 }

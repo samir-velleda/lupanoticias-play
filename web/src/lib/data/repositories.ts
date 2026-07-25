@@ -47,6 +47,8 @@ export interface Repositories {
     enviarParaRevisao(id: string): Promise<Materia>;
     aprovar(id: string, revisorId: string, agendadoPara?: string): Promise<Materia>;
     recusar(id: string, revisorId: string, justificativa: string): Promise<Materia>;
+    /** Transição recusada → em_correcao ao reabrir no editor. */
+    marcarEmCorrecao(id: string): Promise<Materia>;
     listRevisoes(materiaId: string): Promise<RevisaoMateria[]>;
   };
   pautas: {

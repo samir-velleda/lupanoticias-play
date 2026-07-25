@@ -80,12 +80,19 @@ export async function withClient<T>(fn: (c: PoolClient) => Promise<T>): Promise<
 export async function ensureSchema(): Promise<void> {
   if (!schemaReady) {
     schemaReady = (async () => {
-      const { applySchema } = await import('./schema');
+      const { applySchema, normalizeBrokenImageUrls } = await import('./schema');
       const { seedIfEmpty } = await import('./seed');
       await applySchema();
       await seedIfEmpty();
+      // Normalização é best-effort — não pode derrubar o site inteiro (digest RSC).
+      try {
+        await normalizeBrokenImageUrls();
+      } catch (e) {
+        console.warn('[lupa] normalizeBrokenImageUrls ignorado:', e);
+      }
     })().catch((err) => {
       schemaReady = null;
+      console.error('[lupa] ensureSchema falhou:', err);
       throw err;
     });
   }

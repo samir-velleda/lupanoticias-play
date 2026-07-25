@@ -9,6 +9,9 @@ import { MaisLidas } from '@/components/home/MaisLidas';
 import { Opiniao } from '@/components/home/Opiniao';
 import { LupaPlayBand, type PlayBandData } from '@/components/home/LupaPlayBand';
 
+/** Sempre fresco no Aurora (evita revalidatePath gravar em /var/task no Lambda). */
+export const dynamic = 'force-dynamic';
+
 const GRID_EDITORIAS: EditoriaSlug[] = ['economia', 'mundo', 'esportes', 'cultura'];
 
 export default async function HomePage() {

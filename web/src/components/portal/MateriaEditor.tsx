@@ -3,6 +3,9 @@
 import { useState, useTransition } from 'react';
 import type { ArticleBlock, Editoria, Materia, Pauta } from '@/types';
 import { salvarMateria } from '@/lib/actions/materias';
+import { ImageUploadField } from '@/components/media/ImageUploadField';
+import { corpoTemConteudo, limparCorpo } from '@/lib/editorial';
+import { isNextControlFlowError } from '@/lib/next-errors';
 
 type BlocoTipo = ArticleBlock['type'];
 
@@ -71,6 +74,11 @@ export function MateriaEditor({
       setErro('O título é obrigatório.');
       return;
     }
+    const corpoLimpo = limparCorpo(corpo);
+    if (enviar && !corpoTemConteudo(corpoLimpo)) {
+      setErro('Escreva o corpo da matéria antes de enviar para revisão.');
+      return;
+    }
     startTransition(async () => {
       try {
         await salvarMateria({
@@ -79,15 +87,18 @@ export function MateriaEditor({
           standfirst,
           editoria,
           tags,
-          corpo,
+          corpo: corpoLimpo,
           heroImageUrl,
           heroCaption,
           pautaId: pautaId || undefined,
           enviar,
         });
+        // redirect() do server action navega; se não, força lista
+        window.location.assign('/jornalista');
       } catch (e) {
-        // redirect() lança NEXT_REDIRECT (esperado); só mostra erros reais
-        if (e instanceof Error && !/NEXT_REDIRECT/.test(e.message)) setErro(e.message);
+        // redirect() do Next usa digest NEXT_REDIRECT — não é erro de negócio
+        if (isNextControlFlowError(e)) return;
+        setErro(e instanceof Error && e.message ? e.message : 'Falha ao salvar');
       }
     });
   };
@@ -133,10 +144,14 @@ export function MateriaEditor({
                   </div>
                 ) : null}
                 {b.type === 'image' ? (
-                  <div className="space-y-2">
-                    <input value={b.url} onChange={(e) => updBloco(i, { url: e.target.value })} className={field} placeholder="URL da imagem" />
-                    <input value={b.caption ?? ''} onChange={(e) => updBloco(i, { caption: e.target.value })} className={field} placeholder="Legenda (opcional)" />
-                  </div>
+                  <ImageUploadField
+                    label="Imagem do bloco"
+                    value={b.url}
+                    onChange={(url) => updBloco(i, { url })}
+                    materiaId={materia?.id}
+                    caption={b.caption}
+                    onCaptionChange={(caption) => updBloco(i, { caption })}
+                  />
                 ) : null}
                 {b.type === 'embed' ? (
                   <input value={b.mediaId} onChange={(e) => updBloco(i, { mediaId: e.target.value })} className={field} placeholder="ID da mídia (Lupa Play)" />
@@ -188,11 +203,14 @@ export function MateriaEditor({
             ))}
           </div>
         </div>
-        <div>
-          <label className={label} htmlFor="hero">Imagem principal (URL)</label>
-          <input id="hero" value={heroImageUrl} onChange={(e) => setHeroImageUrl(e.target.value)} className={field} placeholder="URL" />
-          <input value={heroCaption} onChange={(e) => setHeroCaption(e.target.value)} className={`${field} mt-2`} placeholder="Legenda da imagem" />
-        </div>
+        <ImageUploadField
+          label="Imagem principal"
+          value={heroImageUrl}
+          onChange={setHeroImageUrl}
+          materiaId={materia?.id}
+          caption={heroCaption}
+          onCaptionChange={setHeroCaption}
+        />
 
         <div className="flex flex-col gap-2 border-t border-line pt-4">
           <button type="button" disabled={pending} onClick={() => salvar(true)} className="rounded bg-ink px-4 py-2.5 font-display text-sm font-bold text-white hover:opacity-90 disabled:opacity-50">

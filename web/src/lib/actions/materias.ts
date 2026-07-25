@@ -1,12 +1,18 @@
 'use server';
 
 import { z } from 'zod';
-import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { repositories } from '@/lib/data/repositories';
 import { exigirGrupo } from '@/lib/auth/session';
 import { autorIdDoUsuario } from '@/lib/auth/perfil';
 import { isEditoriaSlug } from '@/lib/editorias';
+import { isNextControlFlowError, mensagemErro, safeRevalidatePath } from '@/lib/cache-safe';
+import {
+  corpoTemConteudo,
+  limparCorpo,
+  STATUS_EDITAVEL,
+  STATUS_PODE_ENVIAR,
+} from '@/lib/editorial';
 import type { ArticleBlock, CriarMateriaInput, EditoriaSlug } from '@/types';
 
 const blocoSchema = z.discriminatedUnion('type', [
@@ -33,41 +39,34 @@ export interface SalvarMateriaPayload extends z.input<typeof materiaSchema> {
   enviar?: boolean;
 }
 
-function corpoTemConteudo(corpo: ArticleBlock[]): boolean {
-  return corpo.some((b) => {
-    if (b.type === 'paragraph' || b.type === 'heading' || b.type === 'pullquote') {
-      return b.text.trim().length > 0;
-    }
-    if (b.type === 'image') return b.url.trim().length > 0;
-    if (b.type === 'embed') return b.mediaId.trim().length > 0;
-    return false;
-  });
+function revalidateEditorial() {
+  safeRevalidatePath('/jornalista');
+  safeRevalidatePath('/jornalista/correcoes');
+  safeRevalidatePath('/admin');
+  safeRevalidatePath('/admin/redacao');
+  safeRevalidatePath('/');
 }
-
-function revalidateEditorial(editoria?: string, slug?: string) {
-  revalidatePath('/jornalista');
-  revalidatePath('/jornalista/correcoes');
-  revalidatePath('/admin');
-  revalidatePath('/admin/redacao');
-  revalidatePath('/');
-  if (editoria) {
-    revalidatePath(`/${editoria}`);
-    if (slug) revalidatePath(`/${editoria}/${slug}`);
-  }
-}
-
-const STATUS_EDITAVEL = new Set(['rascunho', 'pendente', 'recusada', 'em_correcao']);
 
 /** Salva rascunho (cria/atualiza) e, opcionalmente, envia para revisão. */
 export async function salvarMateria(payload: SalvarMateriaPayload): Promise<void> {
   const usuario = await exigirGrupo('jornalista', 'diretor', 'admin');
-  const data = materiaSchema.parse(payload);
+
+  const parsed = materiaSchema.safeParse({
+    ...payload,
+    corpo: limparCorpo((payload.corpo ?? []) as ArticleBlock[]),
+  });
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? 'Dados inválidos');
+  }
+  const data = parsed.data;
 
   if (payload.enviar && !corpoTemConteudo(data.corpo as ArticleBlock[])) {
     throw new Error('Escreva o corpo da matéria antes de enviar para revisão.');
   }
 
   const autorId = await autorIdDoUsuario(usuario);
+  if (!autorId) throw new Error('Não foi possível identificar o autor. Faça login novamente.');
+
   const isStaff = usuario.grupos.includes('admin') || usuario.grupos.includes('diretor');
 
   if (payload.id) {
@@ -79,6 +78,12 @@ export async function salvarMateria(payload: SalvarMateriaPayload): Promise<void
     }
     if (!STATUS_EDITAVEL.has(atual.status) && !isStaff) {
       throw new Error(`Matéria com status "${atual.status}" não pode mais ser editada.`);
+    }
+    if (payload.enviar && !STATUS_PODE_ENVIAR.has(atual.status) && !isStaff) {
+      throw new Error(`Não é possível enviar matéria com status "${atual.status}".`);
+    }
+    if (atual.status === 'recusada') {
+      await repositories.materias.marcarEmCorrecao(atual.id);
     }
   }
 
@@ -97,55 +102,78 @@ export async function salvarMateria(payload: SalvarMateriaPayload): Promise<void
   const materia = payload.id
     ? await repositories.materias.atualizar(payload.id, {
         ...input,
-        // Não trocar autor em update (evita reatribuir matéria alheia).
-        autorId: undefined,
+        autorId: undefined, // não reatribui autor no update
       })
     : await repositories.materias.criar(input);
+
+  if (!materia.autores.length && !payload.id) {
+    // Defesa: criar sem autor impede listMinhas do jornalista.
+    throw new Error('Matéria criada sem autor. Tente novamente.');
+  }
 
   if (payload.enviar) {
     await repositories.materias.enviarParaRevisao(materia.id);
   }
 
-  revalidateEditorial(materia.editoria, materia.slug);
+  revalidateEditorial();
   redirect('/jornalista');
 }
 
 export interface AcaoRedacaoResult {
   ok: boolean;
   erro?: string;
+  statusFinal?: string;
 }
 
-/** Aprova matéria pendente (publica imediatamente se sem agendamento). */
+/** Aprova matéria pendente (publica imediatamente). Idempotente se já publicada. */
 export async function aprovarMateria(materiaId: string): Promise<AcaoRedacaoResult> {
   try {
+    if (!materiaId?.trim()) return { ok: false, erro: 'ID da matéria inválido.' };
     const usuario = await exigirGrupo('admin', 'diretor');
     const revisorId = await autorIdDoUsuario(usuario);
+    const atual = await repositories.materias.getById(materiaId);
+    if (!atual) return { ok: false, erro: 'Matéria não encontrada.' };
+    if (atual.status === 'publicada') {
+      revalidateEditorial();
+      return { ok: true, statusFinal: 'publicada' };
+    }
     const m = await repositories.materias.aprovar(materiaId, revisorId);
-    revalidateEditorial(m.editoria, m.slug);
-    revalidatePath(`/admin/redacao/${materiaId}`);
-    return { ok: true };
+    revalidateEditorial();
+    safeRevalidatePath(`/admin/redacao/${materiaId}`);
+    return { ok: true, statusFinal: m.status };
   } catch (e) {
-    return { ok: false, erro: e instanceof Error ? e.message : 'Falha ao aprovar' };
+    if (isNextControlFlowError(e)) throw e;
+    console.error('[lupa] aprovarMateria', materiaId, e);
+    return { ok: false, erro: mensagemErro(e, 'Falha ao aprovar') };
   }
 }
 
-/** Recusa matéria com justificativa obrigatória. */
+/** Recusa matéria com justificativa. Idempotente se já recusada. */
 export async function recusarMateria(
   materiaId: string,
   justificativa: string,
 ): Promise<AcaoRedacaoResult> {
   try {
+    if (!materiaId?.trim()) return { ok: false, erro: 'ID da matéria inválido.' };
     const usuario = await exigirGrupo('admin', 'diretor');
     if (!justificativa?.trim()) {
       return { ok: false, erro: 'Justificativa é obrigatória.' };
     }
     const revisorId = await autorIdDoUsuario(usuario);
+    const atual = await repositories.materias.getById(materiaId);
+    if (!atual) return { ok: false, erro: 'Matéria não encontrada.' };
+    if (atual.status === 'recusada' || atual.status === 'em_correcao') {
+      revalidateEditorial();
+      return { ok: true, statusFinal: atual.status };
+    }
     const m = await repositories.materias.recusar(materiaId, revisorId, justificativa.trim());
-    revalidateEditorial(m.editoria, m.slug);
-    revalidatePath(`/admin/redacao/${materiaId}`);
-    revalidatePath('/jornalista/correcoes');
-    return { ok: true };
+    revalidateEditorial();
+    safeRevalidatePath(`/admin/redacao/${materiaId}`);
+    safeRevalidatePath('/jornalista/correcoes');
+    return { ok: true, statusFinal: m.status };
   } catch (e) {
-    return { ok: false, erro: e instanceof Error ? e.message : 'Falha ao recusar' };
+    if (isNextControlFlowError(e)) throw e;
+    console.error('[lupa] recusarMateria', materiaId, e);
+    return { ok: false, erro: mensagemErro(e, 'Falha ao recusar') };
   }
 }

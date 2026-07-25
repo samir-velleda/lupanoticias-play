@@ -8,6 +8,8 @@ import { autorIdDoUsuario } from '@/lib/auth/perfil';
 import { StatusBadge } from '@/components/portal/StatusBadge';
 import { EmptyState } from '@/components/ui';
 
+export const dynamic = 'force-dynamic';
+
 const EM_CORRECAO: StatusMateria[] = ['recusada', 'em_correcao'];
 
 export default async function Correcoes() {

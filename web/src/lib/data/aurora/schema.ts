@@ -3,6 +3,40 @@
  */
 import { query } from './client';
 
+/** Paths de seed fictício que quebram no web CDN → limpa para placeholder. */
+export async function normalizeBrokenImageUrls(): Promise<void> {
+  await query(`
+    UPDATE materia
+    SET hero_image_url = NULL
+    WHERE hero_image_url IS NOT NULL
+      AND (
+        hero_image_url LIKE '/media/cover-%'
+        OR hero_image_url LIKE '/avatars/%'
+      )
+  `);
+  // Só reescreve corpo se for array JSONB (evita erro em linhas inválidas).
+  await query(`
+    UPDATE materia
+    SET corpo = (
+      SELECT COALESCE(jsonb_agg(
+        CASE
+          WHEN elem->>'type' = 'image'
+               AND (elem->>'url' LIKE '/media/cover-%' OR elem->>'url' = '')
+          THEN elem || jsonb_build_object('url', '')
+          ELSE elem
+        END
+      ), '[]'::jsonb)
+      FROM jsonb_array_elements(
+        CASE WHEN jsonb_typeof(COALESCE(corpo, '[]'::jsonb)) = 'array'
+             THEN COALESCE(corpo, '[]'::jsonb)
+             ELSE '[]'::jsonb END
+      ) AS elem
+    )
+    WHERE corpo IS NOT NULL
+      AND corpo::text LIKE '%/media/cover-%'
+  `);
+}
+
 const DDL = `
 CREATE TABLE IF NOT EXISTS editoria (
   slug TEXT PRIMARY KEY,

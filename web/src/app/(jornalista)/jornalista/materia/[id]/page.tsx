@@ -4,8 +4,7 @@ import { exigirGrupo } from '@/lib/auth/session';
 import { autorIdDoUsuario } from '@/lib/auth/perfil';
 import { MateriaEditor } from '@/components/portal/MateriaEditor';
 import { StatusBadge } from '@/components/portal/StatusBadge';
-
-const STATUS_EDITAVEL = new Set(['rascunho', 'pendente', 'recusada', 'em_correcao']);
+import { STATUS_EDITAVEL } from '@/lib/editorial';
 
 export default async function EditarMateria({
   params,

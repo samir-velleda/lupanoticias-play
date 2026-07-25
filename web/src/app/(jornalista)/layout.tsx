@@ -9,7 +9,8 @@ const NAV = [
 ];
 
 export default async function JornalistaLayout({ children }: { children: React.ReactNode }) {
-  const usuario = await exigirGrupo('jornalista', 'diretor');
+  // admin herda acesso (temAcesso); diretor também pode escrever.
+  const usuario = await exigirGrupo('jornalista', 'diretor', 'admin');
   return (
     <PortalShell titulo="Lupa · Jornalista" nav={NAV} usuarioNome={usuario.nome ?? usuario.email}>
       {children}

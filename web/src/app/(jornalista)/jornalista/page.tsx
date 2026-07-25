@@ -8,12 +8,15 @@ import { autorIdDoUsuario } from '@/lib/auth/perfil';
 import { StatusBadge } from '@/components/portal/StatusBadge';
 import { Pill, EmptyState } from '@/components/ui';
 
+export const dynamic = 'force-dynamic';
+
 const FILTROS: { key: string; label: string; status?: StatusMateria }[] = [
   { key: 'todas', label: 'Todas' },
   { key: 'rascunho', label: 'Rascunhos', status: 'rascunho' },
   { key: 'pendente', label: 'Pendentes', status: 'pendente' },
   { key: 'publicada', label: 'Publicadas', status: 'publicada' },
   { key: 'recusada', label: 'Recusadas', status: 'recusada' },
+  { key: 'correcao', label: 'Em correção', status: 'em_correcao' },
 ];
 
 export default async function MinhasMaterias({

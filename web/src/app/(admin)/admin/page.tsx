@@ -4,6 +4,8 @@ import { editoriaNome } from '@/lib/editorias';
 import { formatNumero } from '@/lib/format';
 import { StatusBadge } from '@/components/portal/StatusBadge';
 
+export const dynamic = 'force-dynamic';
+
 function Kpi({ label, valor }: { label: string; valor: string }) {
   return (
     <div className="rounded-lg border border-line bg-surface p-5">

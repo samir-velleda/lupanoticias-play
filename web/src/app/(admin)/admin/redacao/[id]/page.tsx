@@ -10,6 +10,8 @@ import { StatusBadge } from '@/components/portal/StatusBadge';
 import { RedacaoActions } from '@/components/portal/RedacaoActions';
 import { Tag, Kicker } from '@/components/ui';
 
+export const dynamic = 'force-dynamic';
+
 export default async function RedacaoDetalhe({
   params,
 }: {
@@ -30,7 +32,7 @@ export default async function RedacaoDetalhe({
   });
 
   const autor = materia.autores[0];
-  const podeDecidir = materia.status === 'pendente' || materia.status === 'aprovada';
+  const podeDecidir = materia.status === 'pendente';
 
   return (
     <div className="mx-auto max-w-3xl">

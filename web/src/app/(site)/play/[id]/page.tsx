@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import type { Media, MediaTipo } from '@/types';
+import type { Media } from '@/types';
 import { repositories } from '@/lib/data/repositories';
 import { editoriaNome } from '@/lib/editorias';
 import { formatRelativo, formatViews, formatDuracao } from '@/lib/format';
@@ -15,19 +15,10 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
-// IDs de mídia novos (Estúdio/Aurora) resolvem on-demand.
+// 100% dinâmico (sem prerender estático no Lambda).
+export const dynamic = 'force-dynamic';
 export const dynamicParams = true;
-export async function generateStaticParams() {
-  const tipos: MediaTipo[] = ['video', 'podcast', 'live', 'short'];
-  const listas = await Promise.all(
-    tipos.map((t) =>
-      t === 'short'
-        ? repositories.media.listCortes({ pageSize: 100 })
-        : repositories.media.listByTipo(t, { pageSize: 100 }),
-    ),
-  );
-  return listas.flatMap((p) => p.items.map((m) => ({ id: m.id })));
-}
+export const revalidate = 0;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;

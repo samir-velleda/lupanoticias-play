@@ -181,6 +181,8 @@ export function createMockRepositories(): Repositories {
       async enviarParaRevisao(id: string) {
         const m = _materias.find((x) => x.id === id);
         if (!m) throw new Error(`Matéria ${id} não encontrada`);
+        const ok = ['rascunho', 'pendente', 'recusada', 'em_correcao'].includes(m.status);
+        if (!ok) throw new Error(`Não é possível enviar para revisão com status "${m.status}".`);
         const auto = _modo.find((x) => x.categoria === m.editoria)?.ativo;
         if (auto) {
           m.status = 'publicada';
@@ -194,6 +196,10 @@ export function createMockRepositories(): Repositories {
       async aprovar(id: string, revisorId: string, agendadoPara?: string) {
         const m = _materias.find((x) => x.id === id);
         if (!m) throw new Error(`Matéria ${id} não encontrada`);
+        if (m.status === 'publicada') return clone(m);
+        if (m.status !== 'pendente' && m.status !== 'aprovada') {
+          throw new Error(`Só é possível aprovar matérias pendentes (status atual: ${m.status}).`);
+        }
         if (agendadoPara) {
           m.status = 'aprovada';
           m.agendadoPara = agendadoPara;
@@ -217,6 +223,10 @@ export function createMockRepositories(): Repositories {
         }
         const m = _materias.find((x) => x.id === id);
         if (!m) throw new Error(`Matéria ${id} não encontrada`);
+        if (m.status === 'recusada' || m.status === 'em_correcao') return clone(m);
+        if (m.status !== 'pendente') {
+          throw new Error(`Só é possível recusar matérias pendentes (status atual: ${m.status}).`);
+        }
         m.status = 'recusada';
         m.updatedAt = agora();
         _revisoes.push({
@@ -227,6 +237,15 @@ export function createMockRepositories(): Repositories {
           justificativa,
           criadoEm: agora(),
         });
+        return clone(m);
+      },
+      async marcarEmCorrecao(id: string) {
+        const m = _materias.find((x) => x.id === id);
+        if (!m) throw new Error(`Matéria ${id} não encontrada`);
+        if (m.status === 'recusada' || m.status === 'em_correcao') {
+          m.status = 'em_correcao';
+          m.updatedAt = agora();
+        }
         return clone(m);
       },
       async listRevisoes(materiaId: string) {

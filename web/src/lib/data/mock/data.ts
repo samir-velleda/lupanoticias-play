@@ -40,9 +40,10 @@ export const authors: Author[] = [
 
 const by = (id: string): Author => authors.find((a) => a.id === id)!;
 
-function cover(seed: string): string {
-  // placeholder determinístico (sem asset real ainda) — a UI trata como decorativo.
-  return `/media/cover-${seed}.jpg`;
+function cover(_seed: string): string {
+  // Sem asset real de seed: string vazia → Cover usa placeholder monocromático
+  // (evita <img> quebrado no web CDN). Uploads reais usam URL do CDN de mídia.
+  return '';
 }
 
 export const materias: Materia[] = [
