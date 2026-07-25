@@ -1,7 +1,6 @@
 'use server';
 
 import { z } from 'zod';
-import { redirect } from 'next/navigation';
 import { repositories } from '@/lib/data/repositories';
 import { exigirGrupo } from '@/lib/auth/session';
 import { autorIdDoUsuario } from '@/lib/auth/perfil';
@@ -39,6 +38,15 @@ export interface SalvarMateriaPayload extends z.input<typeof materiaSchema> {
   enviar?: boolean;
 }
 
+export interface SalvarMateriaResult {
+  ok: boolean;
+  erro?: string;
+  id?: string;
+  status?: string;
+  /** Cliente deve navegar aqui (evita redirect() que quebra atrás do CloudFront). */
+  redirectTo?: string;
+}
+
 function revalidateEditorial() {
   safeRevalidatePath('/jornalista');
   safeRevalidatePath('/jornalista/correcoes');
@@ -47,76 +55,93 @@ function revalidateEditorial() {
   safeRevalidatePath('/');
 }
 
-/** Salva rascunho (cria/atualiza) e, opcionalmente, envia para revisão. */
-export async function salvarMateria(payload: SalvarMateriaPayload): Promise<void> {
-  const usuario = await exigirGrupo('jornalista', 'diretor', 'admin');
+/**
+ * Salva rascunho e opcionalmente envia para revisão.
+ * NÃO usa redirect() — retorna { ok, redirectTo } (estável com CF + Lambda).
+ */
+export async function salvarMateria(
+  payload: SalvarMateriaPayload,
+): Promise<SalvarMateriaResult> {
+  try {
+    const usuario = await exigirGrupo('jornalista', 'diretor', 'admin');
 
-  const parsed = materiaSchema.safeParse({
-    ...payload,
-    corpo: limparCorpo((payload.corpo ?? []) as ArticleBlock[]),
-  });
-  if (!parsed.success) {
-    throw new Error(parsed.error.issues[0]?.message ?? 'Dados inválidos');
-  }
-  const data = parsed.data;
-
-  if (payload.enviar && !corpoTemConteudo(data.corpo as ArticleBlock[])) {
-    throw new Error('Escreva o corpo da matéria antes de enviar para revisão.');
-  }
-
-  const autorId = await autorIdDoUsuario(usuario);
-  if (!autorId) throw new Error('Não foi possível identificar o autor. Faça login novamente.');
-
-  const isStaff = usuario.grupos.includes('admin') || usuario.grupos.includes('diretor');
-
-  if (payload.id) {
-    const atual = await repositories.materias.getById(payload.id);
-    if (!atual) throw new Error('Matéria não encontrada.');
-    const dono = atual.autores.some((a) => a.id === autorId);
-    if (!dono && !isStaff) {
-      throw new Error('Você não pode editar a matéria de outro autor.');
+    const parsed = materiaSchema.safeParse({
+      ...payload,
+      corpo: limparCorpo((payload.corpo ?? []) as ArticleBlock[]),
+    });
+    if (!parsed.success) {
+      return { ok: false, erro: parsed.error.issues[0]?.message ?? 'Dados inválidos' };
     }
-    if (!STATUS_EDITAVEL.has(atual.status) && !isStaff) {
-      throw new Error(`Matéria com status "${atual.status}" não pode mais ser editada.`);
+    const data = parsed.data;
+
+    if (payload.enviar && !corpoTemConteudo(data.corpo as ArticleBlock[])) {
+      return { ok: false, erro: 'Escreva o corpo da matéria antes de enviar para revisão.' };
     }
-    if (payload.enviar && !STATUS_PODE_ENVIAR.has(atual.status) && !isStaff) {
-      throw new Error(`Não é possível enviar matéria com status "${atual.status}".`);
+
+    const autorId = await autorIdDoUsuario(usuario);
+    if (!autorId) {
+      return { ok: false, erro: 'Não foi possível identificar o autor. Faça login novamente.' };
     }
-    if (atual.status === 'recusada') {
-      await repositories.materias.marcarEmCorrecao(atual.id);
+
+    const isStaff = usuario.grupos.includes('admin') || usuario.grupos.includes('diretor');
+
+    if (payload.id) {
+      const atual = await repositories.materias.getById(payload.id);
+      if (!atual) return { ok: false, erro: 'Matéria não encontrada.' };
+      const dono = atual.autores.some((a) => a.id === autorId);
+      if (!dono && !isStaff) {
+        return { ok: false, erro: 'Você não pode editar a matéria de outro autor.' };
+      }
+      if (!STATUS_EDITAVEL.has(atual.status) && !isStaff) {
+        return { ok: false, erro: `Matéria com status "${atual.status}" não pode mais ser editada.` };
+      }
+      if (payload.enviar && !STATUS_PODE_ENVIAR.has(atual.status) && !isStaff) {
+        return { ok: false, erro: `Não é possível enviar matéria com status "${atual.status}".` };
+      }
+      if (atual.status === 'recusada') {
+        await repositories.materias.marcarEmCorrecao(atual.id);
+      }
     }
+
+    const input: CriarMateriaInput = {
+      titulo: data.titulo,
+      standfirst: data.standfirst,
+      editoria: data.editoria as EditoriaSlug,
+      corpo: data.corpo as ArticleBlock[],
+      tags: data.tags.filter(Boolean),
+      heroImageUrl: data.heroImageUrl || undefined,
+      heroCaption: data.heroCaption || undefined,
+      pautaId: data.pautaId || undefined,
+      autorId,
+    };
+
+    let materia = payload.id
+      ? await repositories.materias.atualizar(payload.id, {
+          ...input,
+          autorId: undefined,
+        })
+      : await repositories.materias.criar(input);
+
+    if (!materia.autores.length && !payload.id) {
+      return { ok: false, erro: 'Matéria criada sem autor. Tente novamente.' };
+    }
+
+    if (payload.enviar) {
+      materia = await repositories.materias.enviarParaRevisao(materia.id);
+    }
+
+    revalidateEditorial();
+    return {
+      ok: true,
+      id: materia.id,
+      status: materia.status,
+      redirectTo: '/jornalista',
+    };
+  } catch (e) {
+    if (isNextControlFlowError(e)) throw e;
+    console.error('[lupa] salvarMateria', e);
+    return { ok: false, erro: mensagemErro(e, 'Falha ao salvar matéria') };
   }
-
-  const input: CriarMateriaInput = {
-    titulo: data.titulo,
-    standfirst: data.standfirst,
-    editoria: data.editoria as EditoriaSlug,
-    corpo: data.corpo as ArticleBlock[],
-    tags: data.tags.filter(Boolean),
-    heroImageUrl: data.heroImageUrl || undefined,
-    heroCaption: data.heroCaption || undefined,
-    pautaId: data.pautaId || undefined,
-    autorId,
-  };
-
-  const materia = payload.id
-    ? await repositories.materias.atualizar(payload.id, {
-        ...input,
-        autorId: undefined, // não reatribui autor no update
-      })
-    : await repositories.materias.criar(input);
-
-  if (!materia.autores.length && !payload.id) {
-    // Defesa: criar sem autor impede listMinhas do jornalista.
-    throw new Error('Matéria criada sem autor. Tente novamente.');
-  }
-
-  if (payload.enviar) {
-    await repositories.materias.enviarParaRevisao(materia.id);
-  }
-
-  revalidateEditorial();
-  redirect('/jornalista');
 }
 
 export interface AcaoRedacaoResult {

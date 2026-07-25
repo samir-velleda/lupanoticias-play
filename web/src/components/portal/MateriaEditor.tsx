@@ -81,7 +81,7 @@ export function MateriaEditor({
     }
     startTransition(async () => {
       try {
-        await salvarMateria({
+        const r = await salvarMateria({
           id: materia?.id,
           titulo,
           standfirst,
@@ -93,12 +93,20 @@ export function MateriaEditor({
           pautaId: pautaId || undefined,
           enviar,
         });
-        // redirect() do server action navega; se não, força lista
-        window.location.assign('/jornalista');
+        if (!r.ok) {
+          setErro(r.erro ?? 'Falha ao salvar');
+          return;
+        }
+        // Navegação no client (sem redirect() no server — estável com CloudFront)
+        window.location.assign(r.redirectTo ?? '/jornalista');
       } catch (e) {
-        // redirect() do Next usa digest NEXT_REDIRECT — não é erro de negócio
         if (isNextControlFlowError(e)) return;
-        setErro(e instanceof Error && e.message ? e.message : 'Falha ao salvar');
+        const msg = e instanceof Error ? e.message : '';
+        setErro(
+          msg && !/unexpected response/i.test(msg)
+            ? msg
+            : 'Falha de comunicação com o servidor. Atualize a página e tente de novo.',
+        );
       }
     });
   };
