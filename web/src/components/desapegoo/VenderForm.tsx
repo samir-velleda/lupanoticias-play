@@ -85,9 +85,12 @@ export function VenderForm() {
         precoCentavos: preco,
         fotos,
         freteGratis: formData.get('freteGratis') === 'on',
-        vendedorNome: String(formData.get('vendedorNome') ?? '') || undefined,
       });
       if (!result.ok) {
+        if (result.redirectTo) {
+          router.push(result.redirectTo);
+          return;
+        }
         setErro(result.erro ?? 'Não foi possível publicar.');
         return;
       }
@@ -189,18 +192,6 @@ export function VenderForm() {
           required
           rows={4}
           placeholder="por que você tá desapegando? tem algum detalhe, marquinha de uso, memória boa?"
-          className={field}
-        />
-      </div>
-
-      <div>
-        <label htmlFor="vendedorNome" className={label}>
-          nome da lojinha (opcional)
-        </label>
-        <input
-          id="vendedorNome"
-          name="vendedorNome"
-          placeholder="ex.: lojinha da Ju"
           className={field}
         />
       </div>

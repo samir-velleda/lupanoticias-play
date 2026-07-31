@@ -8,11 +8,13 @@ import type {
   DesapegoCategoria,
   DesapegoEstadoItem,
   DesapegoAnuncioStatus,
+  DesapegoKycStatus,
   DesapegoVendedor,
+  SalvarKycInput,
 } from '@/types/desapego';
 import { ensureSchema, query, withClient } from '../aurora/client';
 import { desapegoAnunciosSeed, desapegoVendedores } from './seed';
-import type { DesapegoRepository, ListarAnunciosOpts } from './types';
+import type { DesapegoRepository, EnsureVendedorInput, ListarAnunciosOpts } from './types';
 
 type VendedorRow = {
   id: string;
@@ -25,6 +27,14 @@ type VendedorRow = {
   vendas: number;
   bio: string | null;
   desde: Date | string | null;
+  cognito_sub: string | null;
+  email: string | null;
+  nome_completo: string | null;
+  cpf: string | null;
+  telefone: string | null;
+  chave_pix: string | null;
+  kyc_status: string | null;
+  kyc_atualizado_em: Date | string | null;
 };
 
 type AnuncioRow = {
@@ -78,7 +88,21 @@ function mapVendedor(r: VendedorRow): DesapegoVendedor {
         ? r.desde.slice(0, 10)
         : r.desde.toISOString().slice(0, 10)
       : undefined,
+    cognitoSub: r.cognito_sub ?? undefined,
+    email: r.email ?? undefined,
+    nomeCompleto: r.nome_completo ?? undefined,
+    cpf: r.cpf ?? undefined,
+    telefone: r.telefone ?? undefined,
+    chavePix: r.chave_pix ?? undefined,
+    kycStatus: (r.kyc_status as DesapegoKycStatus) || 'incompleto',
+    kycAtualizadoEm: iso(r.kyc_atualizado_em),
   };
+}
+
+function iniciaisDe(nome: string): string {
+  const parts = nome.trim().split(/\s+/);
+  if (parts.length >= 2) return `${parts[0]![0]}${parts[1]![0]}`.toUpperCase();
+  return nome.slice(0, 2).toUpperCase() || 'XX';
 }
 
 function parseFotos(f: string[] | string): string[] {
@@ -159,8 +183,11 @@ async function seedIfEmpty(): Promise<void> {
     try {
       for (const v of desapegoVendedores) {
         await c.query(
-          `INSERT INTO desapego_vendedor (id, slug, nome, iniciais, cidade, uf, nota, vendas, bio, desde)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT (id) DO NOTHING`,
+          `INSERT INTO desapego_vendedor (
+             id, slug, nome, iniciais, cidade, uf, nota, vendas, bio, desde,
+             cognito_sub, email, nome_completo, cpf, telefone, chave_pix, kyc_status
+           ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+           ON CONFLICT (id) DO NOTHING`,
           [
             v.id,
             v.slug,
@@ -172,6 +199,13 @@ async function seedIfEmpty(): Promise<void> {
             v.vendas ?? 0,
             v.bio ?? null,
             v.desde ?? null,
+            v.cognitoSub ?? null,
+            v.email ?? null,
+            v.nomeCompleto ?? null,
+            v.cpf ?? null,
+            v.telefone ?? null,
+            v.chavePix ?? null,
+            v.kycStatus ?? 'aprovado',
           ],
         );
       }
@@ -222,7 +256,7 @@ export function createAuroraDesapegoRepo(): DesapegoRepository {
       const params: unknown[] = [];
       let sql = `SELECT a.*, v.id AS v_id, v.slug AS v_slug, v.nome AS v_nome, v.iniciais AS v_iniciais,
                         v.cidade AS v_cidade, v.uf AS v_uf, v.nota AS v_nota, v.vendas AS v_vendas,
-                        v.bio AS v_bio, v.desde AS v_desde
+                        v.bio AS v_bio, v.desde AS v_desde, v.kyc_status AS v_kyc_status
                  FROM desapego_anuncio a
                  INNER JOIN desapego_vendedor v ON v.id = a.vendedor_id
                  WHERE a.status IN ('ativo','reservado')`;
@@ -259,6 +293,7 @@ export function createAuroraDesapegoRepo(): DesapegoRepository {
           v_vendas: number;
           v_bio: string | null;
           v_desde: Date | string | null;
+          v_kyc_status: string | null;
         }
       >(sql, params);
       return rows.map((r) =>
@@ -277,6 +312,8 @@ export function createAuroraDesapegoRepo(): DesapegoRepository {
               ? r.v_desde.slice(0, 10)
               : r.v_desde.toISOString().slice(0, 10)
             : undefined,
+          // Não expõe CPF/Pix na listagem pública
+          kycStatus: (r.v_kyc_status as DesapegoKycStatus) || 'incompleto',
         }),
       );
     },
@@ -312,12 +349,94 @@ export function createAuroraDesapegoRepo(): DesapegoRepository {
       return rows[0] ? mapVendedor(rows[0]) : null;
     },
 
+    async getVendedorByCognitoSub(sub) {
+      await ready();
+      const { rows } = await query<VendedorRow>(
+        `SELECT * FROM desapego_vendedor WHERE cognito_sub = $1`,
+        [sub],
+      );
+      return rows[0] ? mapVendedor(rows[0]) : null;
+    },
+
     async listVendedores() {
       await ready();
       const { rows } = await query<VendedorRow>(
         `SELECT * FROM desapego_vendedor ORDER BY nome`,
       );
       return rows.map(mapVendedor);
+    },
+
+    async ensureVendedorFromCognito(input: EnsureVendedorInput) {
+      await ready();
+      const existing = await this.getVendedorByCognitoSub(input.cognitoSub);
+      if (existing) {
+        if (input.email && !existing.email) {
+          await query(`UPDATE desapego_vendedor SET email = $2 WHERE id = $1`, [
+            existing.id,
+            input.email,
+          ]);
+          return (await this.getVendedorByCognitoSub(input.cognitoSub))!;
+        }
+        return existing;
+      }
+      const nome = input.nome?.trim() || input.email?.split('@')[0] || 'Minha lojinha';
+      const lojaNome = nome.toLowerCase().includes('lojinha') ? nome : `lojinha de ${nome}`;
+      const id = `dv-${randomUUID().slice(0, 8)}`;
+      const slug = await uniqueVendedorSlug(slugify(lojaNome));
+      const agora = new Date().toISOString().slice(0, 10);
+      await query(
+        `INSERT INTO desapego_vendedor (
+           id, slug, nome, iniciais, email, cognito_sub, nota, vendas, desde, kyc_status
+         ) VALUES ($1,$2,$3,$4,$5,$6,5,0,$7,'incompleto')`,
+        [id, slug, lojaNome, iniciaisDe(nome), input.email ?? null, input.cognitoSub, agora],
+      );
+      const v = await this.getVendedorByCognitoSub(input.cognitoSub);
+      if (!v) throw new Error('Falha ao criar lojinha');
+      return v;
+    },
+
+    async salvarKyc(cognitoSub: string, input: SalvarKycInput) {
+      await ready();
+      let v = await this.getVendedorByCognitoSub(cognitoSub);
+      if (!v) {
+        v = await this.ensureVendedorFromCognito({
+          cognitoSub,
+          nome: input.nomeLojinha,
+        });
+      }
+      const slugBase = slugify(input.nomeLojinha);
+      let slug = v.slug;
+      const { rows: conflict } = await query<{ id: string }>(
+        `SELECT id FROM desapego_vendedor WHERE slug = $1 AND id <> $2`,
+        [slugBase, v.id],
+      );
+      if (!conflict[0]) slug = slugBase;
+
+      const agora = new Date().toISOString();
+      await query(
+        `UPDATE desapego_vendedor SET
+           nome = $2, slug = $3, nome_completo = $4, cpf = $5, telefone = $6, chave_pix = $7,
+           cidade = COALESCE($8, cidade), uf = COALESCE($9, uf), bio = COALESCE($10, bio),
+           iniciais = $11, kyc_status = 'aprovado', kyc_atualizado_em = $12
+         WHERE id = $1`,
+        [
+          v.id,
+          input.nomeLojinha.trim(),
+          slug,
+          input.nomeCompleto.trim(),
+          input.cpf.replace(/\D/g, ''),
+          input.telefone.replace(/\D/g, ''),
+          input.chavePix.trim(),
+          input.cidade?.trim() || null,
+          input.uf?.trim().toUpperCase().slice(0, 2) || null,
+          input.bio?.trim() || null,
+          iniciaisDe(input.nomeCompleto || input.nomeLojinha),
+          agora,
+        ],
+      );
+      const updated = await this.getVendedorByCognitoSub(cognitoSub);
+      if (!updated) throw new Error('Falha ao salvar KYC');
+      return updated;
     },
 
     async criar(input: CriarDesapegoAnuncioInput) {

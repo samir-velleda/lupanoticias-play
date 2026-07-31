@@ -36,4 +36,29 @@ describe('desapegoRepo mock', () => {
     const loja = await repo.listAnuncios({ vendedorSlug: criado.vendedor.slug });
     expect(loja.map((a) => a.id)).toContain(criado.id);
   });
+
+  it('ensure + KYC vincula lojinha ao Cognito sub', async () => {
+    const repo = createMockDesapegoRepo();
+    const v = await repo.ensureVendedorFromCognito({
+      cognitoSub: 'sub-teste-123',
+      email: 'vendedor@lupa.test',
+      nome: 'Samir',
+    });
+    expect(v.kycStatus).toBe('incompleto');
+    expect(v.cognitoSub).toBe('sub-teste-123');
+
+    const kyc = await repo.salvarKyc('sub-teste-123', {
+      nomeLojinha: 'brechó do samir',
+      nomeCompleto: 'Samir Teste',
+      cpf: '52998224725',
+      telefone: '11988887777',
+      chavePix: 'vendedor@lupa.test',
+      cidade: 'São Paulo',
+      uf: 'SP',
+    });
+    expect(kyc.kycStatus).toBe('aprovado');
+    expect(kyc.cpf).toBe('52998224725');
+    expect((await repo.getVendedorByCognitoSub('sub-teste-123'))?.slug).toContain('brecho');
+  });
 });
+

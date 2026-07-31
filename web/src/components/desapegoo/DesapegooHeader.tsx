@@ -18,7 +18,15 @@ function LogoMark() {
   );
 }
 
-export function DesapegooHeader() {
+export function DesapegooHeader({
+  usuarioNome,
+  lojinhaSlug,
+  logado,
+}: {
+  usuarioNome?: string | null;
+  lojinhaSlug?: string | null;
+  logado?: boolean;
+}) {
   const router = useRouter();
   const sp = useSearchParams();
   const [q, setQ] = useState(sp.get('q') ?? '');
@@ -39,6 +47,12 @@ export function DesapegooHeader() {
     { label: 'tudo', cat: null },
     ...DESAPEGO_CATEGORIAS.map((c) => ({ label: c.label, cat: c.slug })),
   ];
+
+  const iniciais = (usuarioNome ?? 'EU')
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? '')
+    .join('') || 'EU';
 
   return (
     <div className="sticky top-0 z-20 border-b border-[var(--d-line)] bg-white">
@@ -72,17 +86,26 @@ export function DesapegooHeader() {
         </form>
 
         <div className="ml-auto flex items-center gap-3.5">
-          <Link
-            href="/desapegoo/lojinha/lojinha-da-ju"
-            className="flex items-center gap-2 !text-inherit"
-          >
-            <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[var(--d-navy)] text-[13px] font-bold text-white">
-              JU
-            </div>
-            <span className="hidden text-[13px] font-semibold text-[var(--d-navy)] sm:inline">
-              minha lojinha
-            </span>
-          </Link>
+          {logado ? (
+            <Link
+              href={lojinhaSlug ? `/desapegoo/minha-lojinha` : '/desapegoo/kyc'}
+              className="flex items-center gap-2 !text-inherit"
+            >
+              <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[var(--d-navy)] text-[13px] font-bold text-white">
+                {iniciais}
+              </div>
+              <span className="hidden text-[13px] font-semibold text-[var(--d-navy)] sm:inline">
+                minha lojinha
+              </span>
+            </Link>
+          ) : (
+            <a
+              href="/api/auth/login?next=%2Fdesapegoo%2Fminha-lojinha"
+              className="text-[13px] font-semibold text-[var(--d-navy)]"
+            >
+              entrar
+            </a>
+          )}
           <Link href="/desapegoo/vender" className="d-btn-primary px-5 py-2.5 text-sm">
             + quero vender
           </Link>

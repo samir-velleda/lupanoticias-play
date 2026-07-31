@@ -68,3 +68,16 @@ export async function exigirGrupo(...grupos: Papel[]): Promise<Usuario> {
   if (!temAcesso(u, grupos)) redirect('/sem-acesso');
   return u;
 }
+
+/**
+ * Exige sessão Cognito (qualquer usuário logado — ex.: Desapegoo).
+ * `next` = path de retorno após login (somente interno).
+ */
+export async function exigirLogin(next?: string): Promise<Usuario> {
+  const u = await getUsuarioAtual();
+  if (!u) {
+    const q = next?.startsWith('/') ? `?next=${encodeURIComponent(next)}` : '';
+    redirect(`/api/auth/login${q}`);
+  }
+  return u;
+}

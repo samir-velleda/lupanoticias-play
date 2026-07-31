@@ -28,4 +28,15 @@ export function authConfigurada(c = getAuthConfig()): boolean {
 
 export const SESSION_COOKIE = 'lupa_session';
 export const STATE_COOKIE = 'lupa_oauth_state';
+/** Path pós-login (ex.: /desapegoo/vender). Só paths internos. */
+export const NEXT_COOKIE = 'lupa_oauth_next';
 export const REDIRECT_PATH = '/api/auth/callback';
+
+/** Valida return path interno (anti open-redirect). */
+export function pathInternoSeguro(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const p = raw.trim();
+  if (!p.startsWith('/') || p.startsWith('//')) return null;
+  if (p.includes('://') || p.includes('\\')) return null;
+  return p.slice(0, 500);
+}

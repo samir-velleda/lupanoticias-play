@@ -6,6 +6,9 @@ export type DesapegoEstadoItem = 'novinho' | 'usado_com_amor' | 'bem_vivido';
 
 export type DesapegoAnuncioStatus = 'rascunho' | 'ativo' | 'reservado' | 'vendido' | 'oculto';
 
+/** KYC de vendedor — dados para futuro repasse Boovest. */
+export type DesapegoKycStatus = 'incompleto' | 'pendente' | 'aprovado' | 'recusado';
+
 export interface DesapegoVendedor {
   id: string;
   slug: string;
@@ -17,6 +20,49 @@ export interface DesapegoVendedor {
   vendas?: number;
   bio?: string;
   desde?: string;
+  /** Cognito sub — lojinha real do usuário. */
+  cognitoSub?: string;
+  email?: string;
+  /** Nome civil (KYC). */
+  nomeCompleto?: string;
+  /** CPF só dígitos (11). Nunca expor completo na UI pública. */
+  cpf?: string;
+  telefone?: string;
+  chavePix?: string;
+  kycStatus: DesapegoKycStatus;
+  kycAtualizadoEm?: string;
+}
+
+export interface SalvarKycInput {
+  nomeLojinha: string;
+  nomeCompleto: string;
+  cpf: string;
+  telefone: string;
+  chavePix: string;
+  cidade?: string;
+  uf?: string;
+  bio?: string;
+}
+
+export function kycCompleto(v: DesapegoVendedor | null | undefined): boolean {
+  if (!v) return false;
+  return (
+    (v.kycStatus === 'aprovado' || v.kycStatus === 'pendente') &&
+    Boolean(v.cpf && v.telefone && v.chavePix && v.nomeCompleto)
+  );
+}
+
+export function podeVender(v: DesapegoVendedor | null | undefined): boolean {
+  if (!v) return false;
+  if (v.kycStatus === 'recusado') return false;
+  return kycCompleto(v);
+}
+
+/** Máscara CPF para exibição: ***.***.***-XX */
+export function mascararCpf(cpf?: string): string {
+  const d = (cpf ?? '').replace(/\D/g, '');
+  if (d.length !== 11) return '—';
+  return `***.***.***-${d.slice(9)}`;
 }
 
 export interface DesapegoAnuncio {

@@ -11,6 +11,11 @@ export const desapegoVendedores: DesapegoVendedor[] = [
     nota: 4.9,
     vendas: 42,
     desde: '2026-07-01',
+    kycStatus: 'aprovado',
+    nomeCompleto: 'Juliana Demo',
+    cpf: '52998224725',
+    telefone: '11999990001',
+    chavePix: 'juliana@demo.lupa',
   },
   {
     id: 'dv-rafa',
@@ -22,6 +27,11 @@ export const desapegoVendedores: DesapegoVendedor[] = [
     nota: 4.8,
     vendas: 18,
     desde: '2026-06-15',
+    kycStatus: 'aprovado',
+    nomeCompleto: 'Rafael Demo',
+    cpf: '39053344705',
+    telefone: '19999990002',
+    chavePix: 'rafael@demo.lupa',
   },
   {
     id: 'dv-bel',
@@ -33,6 +43,11 @@ export const desapegoVendedores: DesapegoVendedor[] = [
     nota: 5,
     vendas: 9,
     desde: '2026-07-10',
+    kycStatus: 'aprovado',
+    nomeCompleto: 'Isabela Demo',
+    cpf: '15350946056',
+    telefone: '11999990003',
+    chavePix: 'bel@demo.lupa',
   },
 ];
 

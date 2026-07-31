@@ -6,16 +6,20 @@ import type {
   CriarDesapegoAnuncioInput,
   DesapegoAnuncio,
   DesapegoVendedor,
+  SalvarKycInput,
 } from '@/types/desapego';
 import { desapegoAnunciosSeed, desapegoVendedores } from './seed';
-import type { DesapegoRepository, ListarAnunciosOpts } from './types';
+import type { DesapegoRepository, EnsureVendedorInput, ListarAnunciosOpts } from './types';
 
 const _anuncios: DesapegoAnuncio[] = desapegoAnunciosSeed.map((a) => ({
   ...a,
   fotos: [...a.fotos],
   vendedor: { ...a.vendedor },
 }));
-const _vendedores: DesapegoVendedor[] = desapegoVendedores.map((v) => ({ ...v }));
+const _vendedores: DesapegoVendedor[] = desapegoVendedores.map((v) => ({
+  ...v,
+  kycStatus: v.kycStatus ?? 'incompleto',
+}));
 
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
 
@@ -46,6 +50,12 @@ function uniqueVendedorSlug(base: string): string {
     slug = `${base}-${n}`;
   }
   return slug;
+}
+
+function iniciaisDe(nome: string): string {
+  const parts = nome.trim().split(/\s+/);
+  if (parts.length >= 2) return `${parts[0]![0]}${parts[1]![0]}`.toUpperCase();
+  return nome.slice(0, 2).toUpperCase() || 'XX';
 }
 
 export function createMockDesapegoRepo(): DesapegoRepository {
@@ -81,8 +91,64 @@ export function createMockDesapegoRepo(): DesapegoRepository {
       return clone(_vendedores.find((v) => v.slug === slug)) ?? null;
     },
 
+    async getVendedorByCognitoSub(sub: string) {
+      return clone(_vendedores.find((v) => v.cognitoSub === sub)) ?? null;
+    },
+
     async listVendedores() {
       return clone(_vendedores);
+    },
+
+    async ensureVendedorFromCognito(input: EnsureVendedorInput) {
+      const existing = _vendedores.find((v) => v.cognitoSub === input.cognitoSub);
+      if (existing) {
+        if (input.email && !existing.email) existing.email = input.email;
+        if (input.nome && existing.nome.startsWith('lojinha ')) {
+          /* keep */
+        }
+        return clone(existing);
+      }
+      const nome = input.nome?.trim() || input.email?.split('@')[0] || 'Minha lojinha';
+      const lojaNome = nome.toLowerCase().startsWith('lojinha') ? nome : `lojinha de ${nome}`;
+      const novo: DesapegoVendedor = {
+        id: `dv-${randomUUID().slice(0, 8)}`,
+        slug: uniqueVendedorSlug(slugify(lojaNome)),
+        nome: lojaNome,
+        iniciais: iniciaisDe(nome),
+        email: input.email,
+        cognitoSub: input.cognitoSub,
+        vendas: 0,
+        nota: 5,
+        desde: new Date().toISOString().slice(0, 10),
+        kycStatus: 'incompleto',
+      };
+      _vendedores.push(novo);
+      return clone(novo);
+    },
+
+    async salvarKyc(cognitoSub: string, input: SalvarKycInput) {
+      let v = _vendedores.find((x) => x.cognitoSub === cognitoSub);
+      if (!v) {
+        v = await this.ensureVendedorFromCognito({ cognitoSub, nome: input.nomeLojinha });
+        v = _vendedores.find((x) => x.cognitoSub === cognitoSub)!;
+      }
+      const slugBase = slugify(input.nomeLojinha);
+      if (!_vendedores.some((x) => x.slug === slugBase && x.id !== v!.id)) {
+        v.slug = slugBase;
+      }
+      v.nome = input.nomeLojinha.trim();
+      v.nomeCompleto = input.nomeCompleto.trim();
+      v.cpf = input.cpf.replace(/\D/g, '');
+      v.telefone = input.telefone.replace(/\D/g, '');
+      v.chavePix = input.chavePix.trim();
+      v.cidade = input.cidade?.trim() || v.cidade;
+      v.uf = input.uf?.trim().toUpperCase().slice(0, 2) || v.uf;
+      v.bio = input.bio?.trim() || v.bio;
+      v.iniciais = iniciaisDe(input.nomeCompleto || input.nomeLojinha);
+      // MVP: auto-aprovado quando dados válidos (pronto para Boovest depois).
+      v.kycStatus = 'aprovado';
+      v.kycAtualizadoEm = new Date().toISOString();
+      return clone(v);
     },
 
     async criar(input: CriarDesapegoAnuncioInput) {
@@ -92,7 +158,7 @@ export function createMockDesapegoRepo(): DesapegoRepository {
           ? _vendedores.find((v) => v.id === input.vendedorId)
           : undefined) ?? _vendedores[0]!;
 
-      if (input.vendedorNome && input.vendedorNome.trim()) {
+      if (input.vendedorNome && input.vendedorNome.trim() && !input.vendedorId) {
         const nome = input.vendedorNome.trim();
         const slugBase = slugify(nome);
         const existing = _vendedores.find(
@@ -101,19 +167,15 @@ export function createMockDesapegoRepo(): DesapegoRepository {
         if (existing) {
           vendedor = existing;
         } else {
-          const parts = nome.split(/\s+/);
-          const iniciais =
-            parts.length >= 2
-              ? `${parts[0]![0]}${parts[1]![0]}`.toUpperCase()
-              : nome.slice(0, 2).toUpperCase();
           const novo: DesapegoVendedor = {
             id: `dv-${randomUUID().slice(0, 8)}`,
             slug: uniqueVendedorSlug(slugBase),
             nome,
-            iniciais,
+            iniciais: iniciaisDe(nome),
             vendas: 0,
             nota: 5,
             desde: agora.slice(0, 10),
+            kycStatus: 'incompleto',
           };
           _vendedores.push(novo);
           vendedor = novo;

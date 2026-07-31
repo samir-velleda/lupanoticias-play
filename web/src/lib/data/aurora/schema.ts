@@ -226,6 +226,16 @@ const MIGRATIONS = [
   `UPDATE author SET cidade_id = 'cid-matriz' WHERE cidade_id IS NULL AND papel <> 'admin'`,
   `UPDATE materia SET cidade_id = 'cid-matriz' WHERE cidade_id IS NULL`,
   `UPDATE pauta SET cidade_id = 'cid-matriz' WHERE cidade_id IS NULL`,
+  // Desapegoo KYC (vendedor)
+  `ALTER TABLE desapego_vendedor ADD COLUMN IF NOT EXISTS cognito_sub TEXT`,
+  `ALTER TABLE desapego_vendedor ADD COLUMN IF NOT EXISTS email TEXT`,
+  `ALTER TABLE desapego_vendedor ADD COLUMN IF NOT EXISTS nome_completo TEXT`,
+  `ALTER TABLE desapego_vendedor ADD COLUMN IF NOT EXISTS cpf TEXT`,
+  `ALTER TABLE desapego_vendedor ADD COLUMN IF NOT EXISTS telefone TEXT`,
+  `ALTER TABLE desapego_vendedor ADD COLUMN IF NOT EXISTS chave_pix TEXT`,
+  `ALTER TABLE desapego_vendedor ADD COLUMN IF NOT EXISTS kyc_status TEXT NOT NULL DEFAULT 'incompleto'`,
+  `ALTER TABLE desapego_vendedor ADD COLUMN IF NOT EXISTS kyc_atualizado_em TIMESTAMPTZ`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_desapego_vendedor_cognito ON desapego_vendedor(cognito_sub) WHERE cognito_sub IS NOT NULL`,
 ];
 
 export async function applySchema(): Promise<void> {

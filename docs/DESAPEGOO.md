@@ -24,11 +24,24 @@ Brechó C2C do Lupa Notícias. Design do protótipo Claude (`Desapegoo.dc.html`)
 - `LUPA_USE_AURORA=true` (prod) → tabelas `desapego_vendedor` / `desapego_anuncio` (seed se vazio)
 - Local sem Aurora → mock em memória
 
-## Fora da Etapa 1 / próximo
+## Login + KYC vendedor (implementado)
 
-- Login obrigatório / KYC vendedor
+| Path | Função |
+|---|---|
+| `/api/auth/login?next=/desapegoo/...` | Cognito com retorno |
+| `/desapegoo/kyc` | CPF, telefone, Pix, lojinha |
+| `/desapegoo/minha-lojinha` | Anúncios do usuário logado |
+| `/desapegoo/vender` | Exige login + KYC completo |
+
+- Sessão: cookie `lupa_session` (mesmo Cognito da redação)
+- KYC auto-aprovado ao preencher dados válidos (repasse Boovest = etapa seguinte)
+- CPF mascarado na UI; Pix/telefone só no painel do vendedor
+
+## Próximo
+
 - Checkout Boovest + escrow (Etapa 3)
 - Avaliações reais, frete integrado
+- Moderação Master de KYC (`pendente` → `aprovado` manual se necessário)
 
 ## Link no Lupa
 
