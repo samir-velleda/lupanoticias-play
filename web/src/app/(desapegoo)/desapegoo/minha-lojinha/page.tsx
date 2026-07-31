@@ -47,9 +47,17 @@ export default async function MinhaLojinhaPage() {
             </Link>
           </div>
         </div>
-        <Link href="/desapegoo/vender" className="d-btn-primary px-6 py-3 text-sm">
-          + novo anúncio
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/desapegoo/vendas" className="rounded-pill border border-white/30 px-4 py-2 text-sm font-semibold !text-[var(--d-cream)]">
+            vendas
+          </Link>
+          <Link href="/desapegoo/wallet" className="rounded-pill border border-white/30 px-4 py-2 text-sm font-semibold !text-[var(--d-cream)]">
+            wallet
+          </Link>
+          <Link href="/desapegoo/vender" className="d-btn-primary px-6 py-3 text-sm">
+            + novo anúncio
+          </Link>
+        </div>
       </div>
 
       <h2 className="d-display mb-4 mt-8 text-[22px] text-[var(--d-navy)]">seus anúncios</h2>

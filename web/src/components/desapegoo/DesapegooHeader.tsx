@@ -87,17 +87,31 @@ export function DesapegooHeader({
 
         <div className="ml-auto flex items-center gap-3.5">
           {logado ? (
-            <Link
-              href={lojinhaSlug ? `/desapegoo/minha-lojinha` : '/desapegoo/kyc'}
-              className="flex items-center gap-2 !text-inherit"
-            >
-              <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[var(--d-navy)] text-[13px] font-bold text-white">
-                {iniciais}
-              </div>
-              <span className="hidden text-[13px] font-semibold text-[var(--d-navy)] sm:inline">
-                minha lojinha
-              </span>
-            </Link>
+            <>
+              <Link
+                href="/desapegoo/compras"
+                className="hidden text-[13px] font-semibold text-[var(--d-navy)] sm:inline"
+              >
+                compras
+              </Link>
+              <Link
+                href={lojinhaSlug ? `/desapegoo/minha-lojinha` : '/desapegoo/kyc'}
+                className="flex items-center gap-2 !text-inherit"
+              >
+                <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[var(--d-navy)] text-[13px] font-bold text-white">
+                  {iniciais}
+                </div>
+                <span className="hidden text-[13px] font-semibold text-[var(--d-navy)] sm:inline">
+                  lojinha
+                </span>
+              </Link>
+              <Link
+                href="/desapegoo/wallet"
+                className="hidden text-[13px] font-semibold text-[var(--d-navy)] sm:inline"
+              >
+                wallet
+              </Link>
+            </>
           ) : (
             <a
               href="/api/auth/login?next=%2Fdesapegoo%2Fminha-lojinha"

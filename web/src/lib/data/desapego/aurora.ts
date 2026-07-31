@@ -5,16 +5,27 @@ import { randomUUID } from 'crypto';
 import type {
   CriarDesapegoAnuncioInput,
   DesapegoAnuncio,
+  DesapegoCashout,
   DesapegoCategoria,
   DesapegoEstadoItem,
   DesapegoAnuncioStatus,
   DesapegoKycStatus,
+  DesapegoPedido,
+  DesapegoPedidoStatus,
   DesapegoVendedor,
+  DesapegoWallet,
   SalvarKycInput,
 } from '@/types/desapego';
+import { calcularTaxaELiquido } from '@/types/desapego';
 import { ensureSchema, query, withClient } from '../aurora/client';
 import { desapegoAnunciosSeed, desapegoVendedores } from './seed';
-import type { DesapegoRepository, EnsureVendedorInput, ListarAnunciosOpts } from './types';
+import type {
+  CriarPedidoInput,
+  DesapegoRepository,
+  EnsureVendedorInput,
+  ListarAnunciosOpts,
+  SolicitarCashoutInput,
+} from './types';
 
 type VendedorRow = {
   id: string;
@@ -522,7 +533,398 @@ export function createAuroraDesapegoRepo(): DesapegoRepository {
       );
       const created = await this.getById(id);
       if (!created) throw new Error('Falha ao criar anúncio');
+      await ensureWalletRow(vendedorId);
       return created;
     },
+
+    async criarPedido(input: CriarPedidoInput) {
+      await ready();
+      const anuncio = await this.getById(input.anuncioId);
+      if (!anuncio) throw new Error('Anúncio não encontrado.');
+      if (anuncio.status !== 'ativo') throw new Error('Anúncio não está disponível.');
+      if (anuncio.vendedor.cognitoSub === input.compradorCognitoSub) {
+        throw new Error('Você não pode comprar o próprio anúncio.');
+      }
+      const { taxaCentavos, liquidoVendedorCentavos } = calcularTaxaELiquido(anuncio.precoCentavos);
+      const id = `dp-${randomUUID()}`;
+      const agora = new Date().toISOString();
+      await withClient(async (c) => {
+        await c.query('BEGIN');
+        try {
+          await c.query(
+            `INSERT INTO desapego_pedido (
+               id, anuncio_id, anuncio_slug, anuncio_titulo, vendedor_id,
+               comprador_cognito_sub, comprador_email, valor_centavos, taxa_centavos,
+               liquido_vendedor_centavos, status, criado_em
+             ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'aguardando_pagamento',$11)`,
+            [
+              id,
+              anuncio.id,
+              anuncio.slug,
+              anuncio.titulo,
+              anuncio.vendedor.id,
+              input.compradorCognitoSub,
+              input.compradorEmail ?? null,
+              anuncio.precoCentavos,
+              taxaCentavos,
+              liquidoVendedorCentavos,
+              agora,
+            ],
+          );
+          await c.query(`UPDATE desapego_anuncio SET status = 'reservado' WHERE id = $1`, [
+            anuncio.id,
+          ]);
+          await c.query('COMMIT');
+        } catch (e) {
+          await c.query('ROLLBACK');
+          throw e;
+        }
+      });
+      await ensureWalletRow(anuncio.vendedor.id);
+      const p = await this.getPedido(id);
+      if (!p) throw new Error('Falha ao criar pedido');
+      return p;
+    },
+
+    async getPedido(id) {
+      await ready();
+      const { rows } = await query<PedidoRow>(`SELECT * FROM desapego_pedido WHERE id = $1`, [id]);
+      return rows[0] ? mapPedido(rows[0]) : null;
+    },
+
+    async listPedidosComprador(cognitoSub) {
+      await ready();
+      const { rows } = await query<PedidoRow>(
+        `SELECT * FROM desapego_pedido WHERE comprador_cognito_sub = $1 ORDER BY criado_em DESC`,
+        [cognitoSub],
+      );
+      return rows.map(mapPedido);
+    },
+
+    async listPedidosVendedor(vendedorId) {
+      await ready();
+      const { rows } = await query<PedidoRow>(
+        `SELECT * FROM desapego_pedido WHERE vendedor_id = $1 ORDER BY criado_em DESC`,
+        [vendedorId],
+      );
+      return rows.map(mapPedido);
+    },
+
+    async confirmarPagamento(pedidoId, paymentRef) {
+      await ready();
+      return withClient(async (c) => {
+        await c.query('BEGIN');
+        try {
+          const { rows } = await c.query<PedidoRow>(
+            `SELECT * FROM desapego_pedido WHERE id = $1 FOR UPDATE`,
+            [pedidoId],
+          );
+          const row = rows[0];
+          if (!row) throw new Error('Pedido não encontrado.');
+          if (row.status !== 'aguardando_pagamento') {
+            throw new Error(`Pedido não está aguardando pagamento (status: ${row.status}).`);
+          }
+          const agora = new Date().toISOString();
+          const ref = paymentRef ?? `master-${pedidoId}`;
+          await c.query(
+            `UPDATE desapego_pedido SET status = 'em_custodia', pago_em = $2, payment_ref = $3 WHERE id = $1`,
+            [pedidoId, agora, ref],
+          );
+          await c.query(
+            `INSERT INTO desapego_wallet (vendedor_id, disponivel_centavos, bloqueado_centavos, atualizado_em)
+             VALUES ($1, 0, $2, $3)
+             ON CONFLICT (vendedor_id) DO UPDATE SET
+               bloqueado_centavos = desapego_wallet.bloqueado_centavos + $2,
+               atualizado_em = $3`,
+            [row.vendedor_id, row.liquido_vendedor_centavos, agora],
+          );
+          await c.query('COMMIT');
+        } catch (e) {
+          await c.query('ROLLBACK');
+          throw e;
+        }
+        const p = await this.getPedido(pedidoId);
+        if (!p) throw new Error('Pedido não encontrado após pagamento');
+        return p;
+      });
+    },
+
+    async marcarEnviado(pedidoId, codigoRastreio) {
+      await ready();
+      const cod = codigoRastreio.trim();
+      if (cod.length < 3) throw new Error('Informe o código de rastreio ou “retirada local”.');
+      const { rows } = await query<PedidoRow>(`SELECT * FROM desapego_pedido WHERE id = $1`, [
+        pedidoId,
+      ]);
+      if (!rows[0]) throw new Error('Pedido não encontrado.');
+      if (rows[0].status !== 'em_custodia') {
+        throw new Error('Só é possível enviar pedidos em custódia.');
+      }
+      const agora = new Date().toISOString();
+      await query(
+        `UPDATE desapego_pedido SET status = 'enviado', codigo_rastreio = $2, enviado_em = $3 WHERE id = $1`,
+        [pedidoId, cod, agora],
+      );
+      const p = await this.getPedido(pedidoId);
+      if (!p) throw new Error('Pedido não encontrado');
+      return p;
+    },
+
+    async confirmarEntrega(pedidoId, compradorSub) {
+      await ready();
+      return withClient(async (c) => {
+        await c.query('BEGIN');
+        try {
+          const { rows } = await c.query<PedidoRow>(
+            `SELECT * FROM desapego_pedido WHERE id = $1 FOR UPDATE`,
+            [pedidoId],
+          );
+          const row = rows[0];
+          if (!row) throw new Error('Pedido não encontrado.');
+          if (row.comprador_cognito_sub !== compradorSub) {
+            throw new Error('Apenas o comprador pode confirmar a entrega.');
+          }
+          if (row.status !== 'enviado' && row.status !== 'em_custodia') {
+            throw new Error('Pedido não está em estado de entrega.');
+          }
+          const agora = new Date().toISOString();
+          await c.query(
+            `UPDATE desapego_wallet SET
+               bloqueado_centavos = bloqueado_centavos - $2,
+               disponivel_centavos = disponivel_centavos + $2,
+               atualizado_em = $3
+             WHERE vendedor_id = $1 AND bloqueado_centavos >= $2`,
+            [row.vendedor_id, row.liquido_vendedor_centavos, agora],
+          );
+          await c.query(
+            `UPDATE desapego_pedido SET status = 'liberado', entregue_em = $2, liberado_em = $2 WHERE id = $1`,
+            [pedidoId, agora],
+          );
+          await c.query(`UPDATE desapego_anuncio SET status = 'vendido' WHERE id = $1`, [
+            row.anuncio_id,
+          ]);
+          await c.query(
+            `UPDATE desapego_vendedor SET vendas = COALESCE(vendas,0) + 1 WHERE id = $1`,
+            [row.vendedor_id],
+          );
+          await c.query('COMMIT');
+        } catch (e) {
+          await c.query('ROLLBACK');
+          throw e;
+        }
+        const p = await this.getPedido(pedidoId);
+        if (!p) throw new Error('Pedido não encontrado');
+        return p;
+      });
+    },
+
+    async cancelarPedido(pedidoId) {
+      await ready();
+      return withClient(async (c) => {
+        await c.query('BEGIN');
+        try {
+          const { rows } = await c.query<PedidoRow>(
+            `SELECT * FROM desapego_pedido WHERE id = $1 FOR UPDATE`,
+            [pedidoId],
+          );
+          const row = rows[0];
+          if (!row) throw new Error('Pedido não encontrado.');
+          if (row.status === 'liberado' || row.status === 'cancelado') {
+            throw new Error('Pedido não pode ser cancelado.');
+          }
+          if (row.status === 'em_custodia' || row.status === 'enviado') {
+            await c.query(
+              `UPDATE desapego_wallet SET
+                 bloqueado_centavos = GREATEST(0, bloqueado_centavos - $2),
+                 atualizado_em = NOW()
+               WHERE vendedor_id = $1`,
+              [row.vendedor_id, row.liquido_vendedor_centavos],
+            );
+          }
+          await c.query(`UPDATE desapego_pedido SET status = 'cancelado' WHERE id = $1`, [
+            pedidoId,
+          ]);
+          await c.query(
+            `UPDATE desapego_anuncio SET status = 'ativo' WHERE id = $1 AND status = 'reservado'`,
+            [row.anuncio_id],
+          );
+          await c.query('COMMIT');
+        } catch (e) {
+          await c.query('ROLLBACK');
+          throw e;
+        }
+        const p = await this.getPedido(pedidoId);
+        if (!p) throw new Error('Pedido não encontrado');
+        return p;
+      });
+    },
+
+    async getWallet(vendedorId) {
+      await ready();
+      await ensureWalletRow(vendedorId);
+      const { rows } = await query<{
+        vendedor_id: string;
+        disponivel_centavos: number;
+        bloqueado_centavos: number;
+      }>(`SELECT * FROM desapego_wallet WHERE vendedor_id = $1`, [vendedorId]);
+      return {
+        vendedorId,
+        disponivelCentavos: Number(rows[0]?.disponivel_centavos ?? 0),
+        bloqueadoCentavos: Number(rows[0]?.bloqueado_centavos ?? 0),
+      } satisfies DesapegoWallet;
+    },
+
+    async listCashouts(vendedorId) {
+      await ready();
+      const { rows } = await query<CashoutRow>(
+        `SELECT * FROM desapego_cashout WHERE vendedor_id = $1 ORDER BY criado_em DESC`,
+        [vendedorId],
+      );
+      return rows.map(mapCashout);
+    },
+
+    async solicitarCashout(input: SolicitarCashoutInput) {
+      await ready();
+      const v = await getVendedorById(input.vendedorId);
+      if (!v) throw new Error('Vendedor não encontrado.');
+      if (!v.cpf) throw new Error('Complete o KYC antes do cashout.');
+      const cpf = input.cpfTitular.replace(/\D/g, '');
+      if (cpf !== v.cpf) {
+        throw new Error('Conta deve ser da mesma titularidade (CPF do KYC).');
+      }
+      if (input.valorCentavos < 100) throw new Error('Valor mínimo R$ 1,00.');
+
+      return withClient(async (c) => {
+        await c.query('BEGIN');
+        try {
+          const { rows: wrows } = await c.query<{
+            disponivel_centavos: number;
+          }>(`SELECT disponivel_centavos FROM desapego_wallet WHERE vendedor_id = $1 FOR UPDATE`, [
+            input.vendedorId,
+          ]);
+          const disp = Number(wrows[0]?.disponivel_centavos ?? 0);
+          if (input.valorCentavos > disp) throw new Error('Saldo disponível insuficiente.');
+          const agora = new Date().toISOString();
+          await c.query(
+            `UPDATE desapego_wallet SET
+               disponivel_centavos = disponivel_centavos - $2,
+               atualizado_em = $3
+             WHERE vendedor_id = $1`,
+            [input.vendedorId, input.valorCentavos, agora],
+          );
+          const id = `dc-${randomUUID()}`;
+          await c.query(
+            `INSERT INTO desapego_cashout (
+               id, vendedor_id, valor_centavos, banco, agencia, conta, tipo_conta,
+               cpf_titular, status, observacao, criado_em, concluido_em
+             ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'concluido',$9,$10,$10)`,
+            [
+              id,
+              input.vendedorId,
+              input.valorCentavos,
+              input.banco.trim(),
+              input.agencia.trim(),
+              input.conta.trim(),
+              input.tipoConta,
+              cpf,
+              'Saldo debitado na wallet Lupa. Liquidação bancária via Boovest/Celcoin (sem split).',
+              agora,
+            ],
+          );
+          await c.query('COMMIT');
+          const { rows } = await query<CashoutRow>(`SELECT * FROM desapego_cashout WHERE id = $1`, [
+            id,
+          ]);
+          return mapCashout(rows[0]!);
+        } catch (e) {
+          await c.query('ROLLBACK');
+          throw e;
+        }
+      });
+    },
   };
+}
+
+type PedidoRow = {
+  id: string;
+  anuncio_id: string;
+  anuncio_slug: string;
+  anuncio_titulo: string;
+  vendedor_id: string;
+  comprador_cognito_sub: string;
+  comprador_email: string | null;
+  valor_centavos: number;
+  taxa_centavos: number;
+  liquido_vendedor_centavos: number;
+  status: string;
+  payment_ref: string | null;
+  codigo_rastreio: string | null;
+  criado_em: Date | string;
+  pago_em: Date | string | null;
+  enviado_em: Date | string | null;
+  entregue_em: Date | string | null;
+  liberado_em: Date | string | null;
+};
+
+type CashoutRow = {
+  id: string;
+  vendedor_id: string;
+  valor_centavos: number;
+  banco: string;
+  agencia: string;
+  conta: string;
+  tipo_conta: string;
+  cpf_titular: string;
+  status: string;
+  observacao: string | null;
+  criado_em: Date | string;
+  concluido_em: Date | string | null;
+};
+
+function mapPedido(r: PedidoRow): DesapegoPedido {
+  return {
+    id: r.id,
+    anuncioId: r.anuncio_id,
+    anuncioSlug: r.anuncio_slug,
+    anuncioTitulo: r.anuncio_titulo,
+    vendedorId: r.vendedor_id,
+    compradorCognitoSub: r.comprador_cognito_sub,
+    compradorEmail: r.comprador_email ?? undefined,
+    valorCentavos: Number(r.valor_centavos),
+    taxaCentavos: Number(r.taxa_centavos),
+    liquidoVendedorCentavos: Number(r.liquido_vendedor_centavos),
+    status: r.status as DesapegoPedidoStatus,
+    paymentRef: r.payment_ref ?? undefined,
+    codigoRastreio: r.codigo_rastreio ?? undefined,
+    criadoEm: iso(r.criado_em) ?? new Date().toISOString(),
+    pagoEm: iso(r.pago_em),
+    enviadoEm: iso(r.enviado_em),
+    entregueEm: iso(r.entregue_em),
+    liberadoEm: iso(r.liberado_em),
+  };
+}
+
+function mapCashout(r: CashoutRow): DesapegoCashout {
+  return {
+    id: r.id,
+    vendedorId: r.vendedor_id,
+    valorCentavos: Number(r.valor_centavos),
+    banco: r.banco,
+    agencia: r.agencia,
+    conta: r.conta,
+    tipoConta: r.tipo_conta === 'poupanca' ? 'poupanca' : 'corrente',
+    cpfTitular: r.cpf_titular,
+    status: r.status as DesapegoCashout['status'],
+    observacao: r.observacao ?? undefined,
+    criadoEm: iso(r.criado_em) ?? new Date().toISOString(),
+    concluidoEm: iso(r.concluido_em),
+  };
+}
+
+async function ensureWalletRow(vendedorId: string): Promise<void> {
+  await query(
+    `INSERT INTO desapego_wallet (vendedor_id, disponivel_centavos, bloqueado_centavos)
+     VALUES ($1, 0, 0) ON CONFLICT (vendedor_id) DO NOTHING`,
+    [vendedorId],
+  );
 }

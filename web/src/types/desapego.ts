@@ -138,3 +138,90 @@ export function inicialTitulo(titulo: string): string {
   const t = titulo.trim();
   return t ? t[0]!.toLowerCase() : '?';
 }
+
+// ---- Pedido + wallet (sem split; custódia até entrega; cashout mesma titularidade) ----
+
+/** Taxa plataforma em basis points (500 = 5%). Fica na master; vendedor recebe o líquido. */
+export const DESAPEGO_TAXA_BPS = 500;
+
+export type DesapegoPedidoStatus =
+  | 'aguardando_pagamento'
+  | 'em_custodia'
+  | 'enviado'
+  | 'entregue'
+  | 'liberado'
+  | 'cancelado'
+  | 'disputa';
+
+export type DesapegoCashoutStatus = 'solicitado' | 'concluido' | 'falhou' | 'cancelado';
+
+export interface DesapegoPedido {
+  id: string;
+  anuncioId: string;
+  anuncioSlug: string;
+  anuncioTitulo: string;
+  vendedorId: string;
+  compradorCognitoSub: string;
+  compradorEmail?: string;
+  valorCentavos: number;
+  taxaCentavos: number;
+  liquidoVendedorCentavos: number;
+  status: DesapegoPedidoStatus;
+  /** Ref externa futura (Boovest/Celcoin) — não inventamos a API. */
+  paymentRef?: string;
+  codigoRastreio?: string;
+  criadoEm: string;
+  pagoEm?: string;
+  enviadoEm?: string;
+  entregueEm?: string;
+  liberadoEm?: string;
+}
+
+export interface DesapegoWallet {
+  vendedorId: string;
+  /** Liberado para cashout. */
+  disponivelCentavos: number;
+  /** Pago pelo comprador, ainda não liberado (até confirmar entrega). */
+  bloqueadoCentavos: number;
+}
+
+export interface DesapegoCashout {
+  id: string;
+  vendedorId: string;
+  valorCentavos: number;
+  /** Conta destino — mesma titularidade do CPF KYC. */
+  banco: string;
+  agencia: string;
+  conta: string;
+  tipoConta: 'corrente' | 'poupanca';
+  cpfTitular: string;
+  status: DesapegoCashoutStatus;
+  /** Sem chamada Celcoin inventada: liquidação bancária fica para Boovest. */
+  observacao?: string;
+  criadoEm: string;
+  concluidoEm?: string;
+}
+
+export function calcularTaxaELiquido(precoCentavos: number): {
+  taxaCentavos: number;
+  liquidoVendedorCentavos: number;
+} {
+  const taxaCentavos = Math.floor((precoCentavos * DESAPEGO_TAXA_BPS) / 10_000);
+  return {
+    taxaCentavos,
+    liquidoVendedorCentavos: precoCentavos - taxaCentavos,
+  };
+}
+
+export function rotuloPedidoStatus(s: DesapegoPedidoStatus): string {
+  const map: Record<DesapegoPedidoStatus, string> = {
+    aguardando_pagamento: 'Aguardando pagamento',
+    em_custodia: 'Em custódia (bloqueado)',
+    enviado: 'Enviado',
+    entregue: 'Entregue',
+    liberado: 'Liberado na wallet',
+    cancelado: 'Cancelado',
+    disputa: 'Em disputa',
+  };
+  return map[s] ?? s;
+}

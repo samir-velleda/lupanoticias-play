@@ -98,7 +98,17 @@ export default async function DesapegooProduto({
           </p>
 
           <div className="mb-7 flex flex-wrap gap-3">
-            <ComprarButton />
+            {anuncio.status === 'ativo' ? (
+              <ComprarButton anuncioId={anuncio.id} />
+            ) : (
+              <p className="rounded-pill border border-[var(--d-line)] bg-white px-5 py-3 text-sm text-[var(--d-body)]">
+                {anuncio.status === 'reservado'
+                  ? 'Item reservado em pedido'
+                  : anuncio.status === 'vendido'
+                    ? 'Item vendido'
+                    : 'Indisponível'}
+              </p>
+            )}
           </div>
 
           <div className="mb-5 rounded-[14px] border border-[var(--d-line)] bg-white px-5 py-4">

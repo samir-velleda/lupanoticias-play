@@ -1,15 +1,26 @@
 /**
- * Mock em memória — usado só quando Aurora está desligado.
+ * Mock em memória — pedidos, wallet (bloqueado/disponível) e cashout.
+ * Sem split; sem chamada Celcoin inventada.
  */
 import { randomUUID } from 'crypto';
 import type {
   CriarDesapegoAnuncioInput,
   DesapegoAnuncio,
+  DesapegoCashout,
+  DesapegoPedido,
   DesapegoVendedor,
+  DesapegoWallet,
   SalvarKycInput,
 } from '@/types/desapego';
+import { calcularTaxaELiquido } from '@/types/desapego';
 import { desapegoAnunciosSeed, desapegoVendedores } from './seed';
-import type { DesapegoRepository, EnsureVendedorInput, ListarAnunciosOpts } from './types';
+import type {
+  CriarPedidoInput,
+  DesapegoRepository,
+  EnsureVendedorInput,
+  ListarAnunciosOpts,
+  SolicitarCashoutInput,
+} from './types';
 
 const _anuncios: DesapegoAnuncio[] = desapegoAnunciosSeed.map((a) => ({
   ...a,
@@ -20,6 +31,9 @@ const _vendedores: DesapegoVendedor[] = desapegoVendedores.map((v) => ({
   ...v,
   kycStatus: v.kycStatus ?? 'incompleto',
 }));
+const _pedidos: DesapegoPedido[] = [];
+const _wallets = new Map<string, DesapegoWallet>();
+const _cashouts: DesapegoCashout[] = [];
 
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
 
@@ -58,9 +72,18 @@ function iniciaisDe(nome: string): string {
   return nome.slice(0, 2).toUpperCase() || 'XX';
 }
 
+function ensureWallet(vendedorId: string): DesapegoWallet {
+  let w = _wallets.get(vendedorId);
+  if (!w) {
+    w = { vendedorId, disponivelCentavos: 0, bloqueadoCentavos: 0 };
+    _wallets.set(vendedorId, w);
+  }
+  return w;
+}
+
 export function createMockDesapegoRepo(): DesapegoRepository {
   return {
-    async listAnuncios(opts: ListarAnunciosOpts = {}): Promise<DesapegoAnuncio[]> {
+    async listAnuncios(opts: ListarAnunciosOpts = {}) {
       const q = opts.q?.trim().toLowerCase();
       let items = _anuncios.filter((a) => a.status === 'ativo' || a.status === 'reservado');
       if (opts.categoria) items = items.filter((a) => a.categoria === opts.categoria);
@@ -79,19 +102,19 @@ export function createMockDesapegoRepo(): DesapegoRepository {
       return clone(items);
     },
 
-    async getById(id: string) {
+    async getById(id) {
       return clone(_anuncios.find((a) => a.id === id)) ?? null;
     },
 
-    async getBySlug(slug: string) {
+    async getBySlug(slug) {
       return clone(_anuncios.find((a) => a.slug === slug)) ?? null;
     },
 
-    async getVendedorBySlug(slug: string) {
+    async getVendedorBySlug(slug) {
       return clone(_vendedores.find((v) => v.slug === slug)) ?? null;
     },
 
-    async getVendedorByCognitoSub(sub: string) {
+    async getVendedorByCognitoSub(sub) {
       return clone(_vendedores.find((v) => v.cognitoSub === sub)) ?? null;
     },
 
@@ -103,9 +126,7 @@ export function createMockDesapegoRepo(): DesapegoRepository {
       const existing = _vendedores.find((v) => v.cognitoSub === input.cognitoSub);
       if (existing) {
         if (input.email && !existing.email) existing.email = input.email;
-        if (input.nome && existing.nome.startsWith('lojinha ')) {
-          /* keep */
-        }
+        ensureWallet(existing.id);
         return clone(existing);
       }
       const nome = input.nome?.trim() || input.email?.split('@')[0] || 'Minha lojinha';
@@ -123,13 +144,14 @@ export function createMockDesapegoRepo(): DesapegoRepository {
         kycStatus: 'incompleto',
       };
       _vendedores.push(novo);
+      ensureWallet(novo.id);
       return clone(novo);
     },
 
-    async salvarKyc(cognitoSub: string, input: SalvarKycInput) {
+    async salvarKyc(cognitoSub, input: SalvarKycInput) {
       let v = _vendedores.find((x) => x.cognitoSub === cognitoSub);
       if (!v) {
-        v = await this.ensureVendedorFromCognito({ cognitoSub, nome: input.nomeLojinha });
+        await this.ensureVendedorFromCognito({ cognitoSub, nome: input.nomeLojinha });
         v = _vendedores.find((x) => x.cognitoSub === cognitoSub)!;
       }
       const slugBase = slugify(input.nomeLojinha);
@@ -145,9 +167,9 @@ export function createMockDesapegoRepo(): DesapegoRepository {
       v.uf = input.uf?.trim().toUpperCase().slice(0, 2) || v.uf;
       v.bio = input.bio?.trim() || v.bio;
       v.iniciais = iniciaisDe(input.nomeCompleto || input.nomeLojinha);
-      // MVP: auto-aprovado quando dados válidos (pronto para Boovest depois).
       v.kycStatus = 'aprovado';
       v.kycAtualizadoEm = new Date().toISOString();
+      ensureWallet(v.id);
       return clone(v);
     },
 
@@ -164,9 +186,8 @@ export function createMockDesapegoRepo(): DesapegoRepository {
         const existing = _vendedores.find(
           (v) => v.slug === slugBase || v.nome.toLowerCase() === nome.toLowerCase(),
         );
-        if (existing) {
-          vendedor = existing;
-        } else {
+        if (existing) vendedor = existing;
+        else {
           const novo: DesapegoVendedor = {
             id: `dv-${randomUUID().slice(0, 8)}`,
             slug: uniqueVendedorSlug(slugBase),
@@ -182,10 +203,9 @@ export function createMockDesapegoRepo(): DesapegoRepository {
         }
       }
 
-      const slug = uniqueAnuncioSlug(slugify(input.titulo));
       const anuncio: DesapegoAnuncio = {
         id: `da-${randomUUID()}`,
-        slug,
+        slug: uniqueAnuncioSlug(slugify(input.titulo)),
         titulo: input.titulo.trim(),
         descricao: input.descricao.trim(),
         categoria: input.categoria,
@@ -202,7 +222,174 @@ export function createMockDesapegoRepo(): DesapegoRepository {
         criadoEm: agora,
       };
       _anuncios.unshift(anuncio);
+      ensureWallet(vendedor.id);
       return clone(anuncio);
+    },
+
+    async criarPedido(input: CriarPedidoInput) {
+      const anuncio = _anuncios.find((a) => a.id === input.anuncioId);
+      if (!anuncio) throw new Error('Anúncio não encontrado.');
+      if (anuncio.status !== 'ativo') throw new Error('Anúncio não está disponível.');
+      if (anuncio.vendedor.cognitoSub && anuncio.vendedor.cognitoSub === input.compradorCognitoSub) {
+        throw new Error('Você não pode comprar o próprio anúncio.');
+      }
+      const { taxaCentavos, liquidoVendedorCentavos } = calcularTaxaELiquido(anuncio.precoCentavos);
+      const pedido: DesapegoPedido = {
+        id: `dp-${randomUUID()}`,
+        anuncioId: anuncio.id,
+        anuncioSlug: anuncio.slug,
+        anuncioTitulo: anuncio.titulo,
+        vendedorId: anuncio.vendedor.id,
+        compradorCognitoSub: input.compradorCognitoSub,
+        compradorEmail: input.compradorEmail,
+        valorCentavos: anuncio.precoCentavos,
+        taxaCentavos,
+        liquidoVendedorCentavos,
+        status: 'aguardando_pagamento',
+        criadoEm: new Date().toISOString(),
+      };
+      _pedidos.unshift(pedido);
+      anuncio.status = 'reservado';
+      ensureWallet(anuncio.vendedor.id);
+      return clone(pedido);
+    },
+
+    async getPedido(id) {
+      return clone(_pedidos.find((p) => p.id === id)) ?? null;
+    },
+
+    async listPedidosComprador(cognitoSub) {
+      return clone(
+        _pedidos
+          .filter((p) => p.compradorCognitoSub === cognitoSub)
+          .sort((a, b) => b.criadoEm.localeCompare(a.criadoEm)),
+      );
+    },
+
+    async listPedidosVendedor(vendedorId) {
+      return clone(
+        _pedidos
+          .filter((p) => p.vendedorId === vendedorId)
+          .sort((a, b) => b.criadoEm.localeCompare(a.criadoEm)),
+      );
+    },
+
+    async confirmarPagamento(pedidoId, paymentRef) {
+      const p = _pedidos.find((x) => x.id === pedidoId);
+      if (!p) throw new Error('Pedido não encontrado.');
+      if (p.status !== 'aguardando_pagamento') {
+        throw new Error(`Pedido não está aguardando pagamento (status: ${p.status}).`);
+      }
+      // Cash-in na master (Celcoin) → custódia: bloqueia líquido do vendedor
+      p.status = 'em_custodia';
+      p.pagoEm = new Date().toISOString();
+      p.paymentRef = paymentRef ?? `master-sim-${p.id}`;
+      const w = ensureWallet(p.vendedorId);
+      w.bloqueadoCentavos += p.liquidoVendedorCentavos;
+      return clone(p);
+    },
+
+    async marcarEnviado(pedidoId, codigoRastreio) {
+      const p = _pedidos.find((x) => x.id === pedidoId);
+      if (!p) throw new Error('Pedido não encontrado.');
+      if (p.status !== 'em_custodia') {
+        throw new Error('Só é possível enviar pedidos em custódia.');
+      }
+      const cod = codigoRastreio.trim();
+      if (cod.length < 3) throw new Error('Informe o código de rastreio ou “retirada local”.');
+      p.status = 'enviado';
+      p.codigoRastreio = cod;
+      p.enviadoEm = new Date().toISOString();
+      return clone(p);
+    },
+
+    async confirmarEntrega(pedidoId, compradorSub) {
+      const p = _pedidos.find((x) => x.id === pedidoId);
+      if (!p) throw new Error('Pedido não encontrado.');
+      if (p.compradorCognitoSub !== compradorSub) {
+        throw new Error('Apenas o comprador pode confirmar a entrega.');
+      }
+      if (p.status !== 'enviado' && p.status !== 'em_custodia') {
+        throw new Error('Pedido não está em estado de entrega.');
+      }
+      const agora = new Date().toISOString();
+      p.status = 'entregue';
+      p.entregueEm = agora;
+      // Liberação: bloqueado → disponível (sem split)
+      const w = ensureWallet(p.vendedorId);
+      if (w.bloqueadoCentavos < p.liquidoVendedorCentavos) {
+        throw new Error('Saldo bloqueado inconsistente.');
+      }
+      w.bloqueadoCentavos -= p.liquidoVendedorCentavos;
+      w.disponivelCentavos += p.liquidoVendedorCentavos;
+      p.status = 'liberado';
+      p.liberadoEm = agora;
+      const anuncio = _anuncios.find((a) => a.id === p.anuncioId);
+      if (anuncio) anuncio.status = 'vendido';
+      const vend = _vendedores.find((v) => v.id === p.vendedorId);
+      if (vend) vend.vendas = (vend.vendas ?? 0) + 1;
+      return clone(p);
+    },
+
+    async cancelarPedido(pedidoId) {
+      const p = _pedidos.find((x) => x.id === pedidoId);
+      if (!p) throw new Error('Pedido não encontrado.');
+      if (p.status === 'liberado' || p.status === 'cancelado') {
+        throw new Error('Pedido não pode ser cancelado.');
+      }
+      if (p.status === 'em_custodia' || p.status === 'enviado') {
+        const w = ensureWallet(p.vendedorId);
+        w.bloqueadoCentavos = Math.max(0, w.bloqueadoCentavos - p.liquidoVendedorCentavos);
+      }
+      p.status = 'cancelado';
+      const anuncio = _anuncios.find((a) => a.id === p.anuncioId);
+      if (anuncio && anuncio.status === 'reservado') anuncio.status = 'ativo';
+      return clone(p);
+    },
+
+    async getWallet(vendedorId) {
+      return clone(ensureWallet(vendedorId));
+    },
+
+    async listCashouts(vendedorId) {
+      return clone(
+        _cashouts
+          .filter((c) => c.vendedorId === vendedorId)
+          .sort((a, b) => b.criadoEm.localeCompare(a.criadoEm)),
+      );
+    },
+
+    async solicitarCashout(input: SolicitarCashoutInput) {
+      const v = _vendedores.find((x) => x.id === input.vendedorId);
+      if (!v) throw new Error('Vendedor não encontrado.');
+      if (!v.cpf) throw new Error('Complete o KYC antes do cashout.');
+      const cpf = input.cpfTitular.replace(/\D/g, '');
+      if (cpf !== v.cpf) {
+        throw new Error('Conta deve ser da mesma titularidade (CPF do KYC).');
+      }
+      if (input.valorCentavos < 100) throw new Error('Valor mínimo R$ 1,00.');
+      const w = ensureWallet(input.vendedorId);
+      if (input.valorCentavos > w.disponivelCentavos) {
+        throw new Error('Saldo disponível insuficiente.');
+      }
+      w.disponivelCentavos -= input.valorCentavos;
+      const co: DesapegoCashout = {
+        id: `dc-${randomUUID()}`,
+        vendedorId: input.vendedorId,
+        valorCentavos: input.valorCentavos,
+        banco: input.banco.trim(),
+        agencia: input.agencia.trim(),
+        conta: input.conta.trim(),
+        tipoConta: input.tipoConta,
+        cpfTitular: cpf,
+        status: 'concluido',
+        observacao:
+          'Saldo debitado na wallet Lupa. Liquidação bancária via Boovest/Celcoin (sem split) — integração de cashout externo.',
+        criadoEm: new Date().toISOString(),
+        concluidoEm: new Date().toISOString(),
+      };
+      _cashouts.unshift(co);
+      return clone(co);
     },
   };
 }

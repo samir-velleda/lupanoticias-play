@@ -236,6 +236,51 @@ const MIGRATIONS = [
   `ALTER TABLE desapego_vendedor ADD COLUMN IF NOT EXISTS kyc_status TEXT NOT NULL DEFAULT 'incompleto'`,
   `ALTER TABLE desapego_vendedor ADD COLUMN IF NOT EXISTS kyc_atualizado_em TIMESTAMPTZ`,
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_desapego_vendedor_cognito ON desapego_vendedor(cognito_sub) WHERE cognito_sub IS NOT NULL`,
+  // Desapegoo pedido + wallet + cashout (sem split)
+  `CREATE TABLE IF NOT EXISTS desapego_pedido (
+    id TEXT PRIMARY KEY,
+    anuncio_id TEXT NOT NULL,
+    anuncio_slug TEXT NOT NULL,
+    anuncio_titulo TEXT NOT NULL,
+    vendedor_id TEXT NOT NULL,
+    comprador_cognito_sub TEXT NOT NULL,
+    comprador_email TEXT,
+    valor_centavos INT NOT NULL,
+    taxa_centavos INT NOT NULL DEFAULT 0,
+    liquido_vendedor_centavos INT NOT NULL,
+    status TEXT NOT NULL,
+    payment_ref TEXT,
+    codigo_rastreio TEXT,
+    criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    pago_em TIMESTAMPTZ,
+    enviado_em TIMESTAMPTZ,
+    entregue_em TIMESTAMPTZ,
+    liberado_em TIMESTAMPTZ
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_desapego_pedido_vendedor ON desapego_pedido(vendedor_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_desapego_pedido_comprador ON desapego_pedido(comprador_cognito_sub)`,
+  `CREATE INDEX IF NOT EXISTS idx_desapego_pedido_status ON desapego_pedido(status)`,
+  `CREATE TABLE IF NOT EXISTS desapego_wallet (
+    vendedor_id TEXT PRIMARY KEY,
+    disponivel_centavos INT NOT NULL DEFAULT 0,
+    bloqueado_centavos INT NOT NULL DEFAULT 0,
+    atualizado_em TIMESTAMPTZ
+  )`,
+  `CREATE TABLE IF NOT EXISTS desapego_cashout (
+    id TEXT PRIMARY KEY,
+    vendedor_id TEXT NOT NULL,
+    valor_centavos INT NOT NULL,
+    banco TEXT NOT NULL,
+    agencia TEXT NOT NULL,
+    conta TEXT NOT NULL,
+    tipo_conta TEXT NOT NULL DEFAULT 'corrente',
+    cpf_titular TEXT NOT NULL,
+    status TEXT NOT NULL,
+    observacao TEXT,
+    criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    concluido_em TIMESTAMPTZ
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_desapego_cashout_vendedor ON desapego_cashout(vendedor_id)`,
 ];
 
 export async function applySchema(): Promise<void> {

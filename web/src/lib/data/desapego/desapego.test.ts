@@ -60,5 +60,73 @@ describe('desapegoRepo mock', () => {
     expect(kyc.cpf).toBe('52998224725');
     expect((await repo.getVendedorByCognitoSub('sub-teste-123'))?.slug).toContain('brecho');
   });
+
+  it('custódia bloqueia e entrega libera wallet; cashout mesma titularidade', async () => {
+    const repo = createMockDesapegoRepo();
+    const vend = await repo.ensureVendedorFromCognito({
+      cognitoSub: 'sub-vend-1',
+      email: 'v@test.com',
+      nome: 'Vendedor',
+    });
+    await repo.salvarKyc('sub-vend-1', {
+      nomeLojinha: 'loja v',
+      nomeCompleto: 'Vendedor Teste',
+      cpf: '52998224725',
+      telefone: '11999990000',
+      chavePix: 'v@test.com',
+    });
+    const anuncio = await repo.criar({
+      titulo: 'item teste wallet',
+      descricao: 'descrição longa o suficiente do item.',
+      categoria: 'outros',
+      estado: 'novinho',
+      precoCentavos: 10_000,
+      fotos: [],
+      vendedorId: vend.id,
+    });
+    const pedido = await repo.criarPedido({
+      anuncioId: anuncio.id,
+      compradorCognitoSub: 'sub-comp-1',
+      compradorEmail: 'c@test.com',
+    });
+    expect(pedido.status).toBe('aguardando_pagamento');
+
+    await repo.confirmarPagamento(pedido.id);
+    let w = await repo.getWallet(vend.id);
+    expect(w.bloqueadoCentavos).toBe(pedido.liquidoVendedorCentavos);
+    expect(w.disponivelCentavos).toBe(0);
+
+    await repo.marcarEnviado(pedido.id, 'BR123456789');
+    await repo.confirmarEntrega(pedido.id, 'sub-comp-1');
+    w = await repo.getWallet(vend.id);
+    expect(w.bloqueadoCentavos).toBe(0);
+    expect(w.disponivelCentavos).toBe(pedido.liquidoVendedorCentavos);
+
+    await expect(
+      repo.solicitarCashout({
+        vendedorId: vend.id,
+        valorCentavos: 1000,
+        banco: '260',
+        agencia: '0001',
+        conta: '12345-6',
+        tipoConta: 'corrente',
+        cpfTitular: '00000000000',
+      }),
+    ).rejects.toThrow(/mesma titularidade/);
+
+    const co = await repo.solicitarCashout({
+      vendedorId: vend.id,
+      valorCentavos: 1000,
+      banco: '260',
+      agencia: '0001',
+      conta: '12345-6',
+      tipoConta: 'corrente',
+      cpfTitular: '52998224725',
+    });
+    expect(co.status).toBe('concluido');
+    w = await repo.getWallet(vend.id);
+    expect(w.disponivelCentavos).toBe(pedido.liquidoVendedorCentavos - 1000);
+  });
 });
+
 
