@@ -1,0 +1,65 @@
+/* Desapegoo — tokens próprios (não misturar com mono do jornal). */
+.desapegoo-root {
+  --d-navy: #12263a;
+  --d-navy-soft: #1d3a57;
+  --d-coral: #f4633a;
+  --d-coral-dark: #c63d1b;
+  --d-gold: #f4b33a;
+  --d-cream: #faf7f2;
+  --d-cream-2: #f4efe7;
+  --d-line: #ede6db;
+  --d-ink: #1b2733;
+  --d-muted: #8b94a0;
+  --d-body: #5b6470;
+  --d-green: #1e7a45;
+  --d-green-bg: #e7f5ec;
+  --d-font-display: var(--font-bricolage), var(--font-archivo), system-ui, sans-serif;
+  --d-font-ui: var(--font-archivo), system-ui, sans-serif;
+
+  background: var(--d-cream);
+  color: var(--d-ink);
+  font-family: var(--d-font-ui);
+  min-height: 100%;
+}
+
+.desapegoo-root a {
+  color: var(--d-coral-dark);
+  text-decoration: none;
+}
+.desapegoo-root a:hover {
+  color: var(--d-coral);
+}
+
+.desapegoo-root .d-display {
+  font-family: var(--d-font-display);
+  font-weight: 800;
+}
+
+.desapegoo-root .d-btn-primary {
+  background: var(--d-coral);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.desapegoo-root .d-btn-primary:hover {
+  background: var(--d-coral-dark);
+}
+.desapegoo-root .d-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.desapegoo-root .d-card {
+  background: #fff;
+  border: 1px solid var(--d-line);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.desapegoo-root .d-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(18, 38, 58, 0.1);
+}

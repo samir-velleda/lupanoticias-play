@@ -166,6 +166,45 @@ CREATE TABLE IF NOT EXISTS cidade (
   criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   atualizado_em TIMESTAMPTZ
 );
+
+CREATE TABLE IF NOT EXISTS desapego_vendedor (
+  id TEXT PRIMARY KEY,
+  slug TEXT NOT NULL UNIQUE,
+  nome TEXT NOT NULL,
+  iniciais TEXT NOT NULL DEFAULT '',
+  cidade TEXT,
+  uf TEXT,
+  nota REAL,
+  vendas INT NOT NULL DEFAULT 0,
+  bio TEXT,
+  desde DATE,
+  author_id TEXT,
+  criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS desapego_anuncio (
+  id TEXT PRIMARY KEY,
+  slug TEXT NOT NULL UNIQUE,
+  titulo TEXT NOT NULL,
+  descricao TEXT NOT NULL DEFAULT '',
+  categoria TEXT NOT NULL,
+  estado TEXT NOT NULL,
+  preco_centavos INT NOT NULL,
+  preco_antigo_centavos INT,
+  fotos JSONB NOT NULL DEFAULT '[]'::jsonb,
+  frete_gratis BOOLEAN NOT NULL DEFAULT FALSE,
+  status TEXT NOT NULL DEFAULT 'ativo',
+  vendedor_id TEXT NOT NULL REFERENCES desapego_vendedor(id),
+  cidade_id TEXT,
+  placeholder_bg TEXT,
+  placeholder_fg TEXT,
+  criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  atualizado_em TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_desapego_anuncio_status ON desapego_anuncio(status);
+CREATE INDEX IF NOT EXISTS idx_desapego_anuncio_cat ON desapego_anuncio(categoria);
+CREATE INDEX IF NOT EXISTS idx_desapego_anuncio_vendedor ON desapego_anuncio(vendedor_id);
 `;
 
 /** Migrações aditivas (idempotentes) — multi-cidade / licenças. */

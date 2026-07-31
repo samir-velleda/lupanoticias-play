@@ -95,6 +95,36 @@ export async function criarPresignedArticleImage(input: {
   return { url, key, publicUrl, expiresIn, contentType };
 }
 
+/**
+ * Pre-signed PUT para foto de anúncio Desapegoo.
+ * Path: media/desapego/{userSubOrAnon}/{uuid}.{ext}
+ * Público (sem login) em Etapa 1 — restrito em Etapa 2.
+ */
+export async function criarPresignedDesapegoImage(input: {
+  contentType: string;
+  userSub?: string;
+}): Promise<PresignedUpload> {
+  const contentType = input.contentType.toLowerCase();
+  if (!isAllowedImageType(contentType)) {
+    throw new Error('Tipo de imagem não permitido. Use JPEG, PNG, WebP ou GIF.');
+  }
+  const cfg = getAwsConfig();
+  if (!cfg.mediaBucket) {
+    throw new Error('LUPA_MEDIA_BUCKET não configurado');
+  }
+  const ext = EXT_BY_TYPE[contentType] ?? 'jpg';
+  const owner = input.userSub?.trim() || 'anon';
+  const key = `media/desapego/${owner}/${randomUUID()}.${ext}`;
+  const expiresIn = 900;
+  const command = new PutObjectCommand({
+    Bucket: cfg.mediaBucket,
+    Key: key,
+    ContentType: contentType,
+  });
+  const url = await getSignedUrl(getS3(), command, { expiresIn });
+  return { url, key, publicUrl: urlPublicaCdn(key), expiresIn, contentType };
+}
+
 /** URL pública via CloudFront para um objeto de mídia. */
 export function urlPublicaCdn(key: string): string {
   const { cdnDomain } = getAwsConfig();

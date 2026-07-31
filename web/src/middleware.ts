@@ -43,6 +43,7 @@ export function middleware(req: NextRequest) {
         'estudio',
         'play',
         'cortes',
+        'desapegoo',
         'api',
         'entrar',
         'sem-acesso',

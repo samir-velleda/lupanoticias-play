@@ -47,6 +47,7 @@ export async function Header() {
       label: nomePorSlug.get(slug) ?? slug,
     })),
     { href: '/play', label: 'Vídeos' },
+    { href: '/desapegoo', label: 'Desapegoo' },
   ];
 
   return (
