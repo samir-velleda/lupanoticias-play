@@ -1,11 +1,13 @@
 import { exigirGrupo } from '@/lib/auth/session';
 import { authConfigurada } from '@/lib/auth/config';
 import { listarUsuarios } from '@/lib/auth/admin';
+import { repositories } from '@/lib/data/repositories';
 import { CriarUsuarioForm } from '@/components/portal/CriarUsuarioForm';
 
 export default async function UsuariosAdmin() {
-  await exigirGrupo('admin'); // usuários é admin-only
+  await exigirGrupo('admin'); // usuários é Master-only
   const configurada = authConfigurada();
+  const cidades = await repositories.cidades.list();
   let usuarios: Awaited<ReturnType<typeof listarUsuarios>> = [];
   let erro = '';
   if (configurada) {
@@ -30,7 +32,7 @@ export default async function UsuariosAdmin() {
       ) : null}
 
       <div className="mb-6">
-        <CriarUsuarioForm />
+        <CriarUsuarioForm cidades={cidades} />
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-line bg-surface">

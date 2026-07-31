@@ -8,10 +8,13 @@ import { createMockRepositories } from '../mock';
 import type {
   ArticleBlock,
   Author,
+  Cidade,
   CreateMediaInput,
+  CriarCidadeInput,
   CriarMateriaInput,
   Editoria,
   EditoriaSlug,
+  EscopoConteudo,
   Materia,
   Media,
   MediaTipo,
@@ -22,6 +25,7 @@ import type {
   Pauta,
   Playlist,
   RevisaoMateria,
+  StatusLicenca,
   StatusMateria,
 } from '@/types';
 import { ensureSchema, query, withClient } from './client';
@@ -38,6 +42,8 @@ type MateriaRow = {
   tags: string[] | null;
   status: string;
   pauta_id: string | null;
+  cidade_id: string | null;
+  escopo: string | null;
   published_at: Date | string | null;
   updated_at: Date | string | null;
   agendado_para: Date | string | null;
@@ -54,6 +60,20 @@ type AuthorRow = {
   avatar_url: string | null;
   papel: string;
   cognito_sub: string | null;
+  cidade_id: string | null;
+};
+
+type CidadeRow = {
+  id: string;
+  nome: string;
+  uf: string;
+  slug: string;
+  status: string;
+  diretor_author_id: string | null;
+  permite_estadual: boolean;
+  permite_nacional: boolean;
+  criado_em: Date | string;
+  atualizado_em: Date | string | null;
 };
 
 type MediaRow = {
@@ -101,6 +121,22 @@ function mapAuthor(r: AuthorRow): Author {
     bio: r.bio ?? undefined,
     avatarUrl: r.avatar_url ?? undefined,
     papel: r.papel as Papel,
+    cidadeId: r.cidade_id ?? undefined,
+  };
+}
+
+function mapCidade(r: CidadeRow): Cidade {
+  return {
+    id: r.id,
+    nome: r.nome,
+    uf: r.uf,
+    slug: r.slug,
+    status: r.status as StatusLicenca,
+    diretorAuthorId: r.diretor_author_id ?? undefined,
+    permiteEstadual: !!r.permite_estadual,
+    permiteNacional: !!r.permite_nacional,
+    criadoEm: iso(r.criado_em) ?? new Date().toISOString(),
+    atualizadoEm: iso(r.atualizado_em),
   };
 }
 
@@ -129,6 +165,8 @@ async function mapMateria(r: MateriaRow): Promise<Materia> {
     tags: r.tags ?? [],
     status: r.status as StatusMateria,
     pautaId: r.pauta_id ?? undefined,
+    cidadeId: r.cidade_id ?? undefined,
+    escopo: (r.escopo as EscopoConteudo) || 'local',
     publishedAt: iso(r.published_at),
     updatedAt: iso(r.updated_at),
     agendadoPara: iso(r.agendado_para),
@@ -292,13 +330,22 @@ export function createAuroraRepositories(): Repositories {
       async listPendentes(opts) {
         await ready();
         const { page, pageSize, offset } = paginateOpts(opts);
+        const cidadeId = opts?.cidadeId;
+        const params: unknown[] = [];
+        let where = `status = 'pendente'`;
+        if (cidadeId) {
+          params.push(cidadeId);
+          where += ` AND cidade_id = $${params.length}`;
+        }
         const count = await query<{ n: string }>(
-          `SELECT COUNT(*)::text AS n FROM materia WHERE status = 'pendente'`,
+          `SELECT COUNT(*)::text AS n FROM materia WHERE ${where}`,
+          params,
         );
+        params.push(pageSize, offset);
         const { rows } = await query<MateriaRow>(
-          `SELECT * FROM materia WHERE status = 'pendente'
-           ORDER BY updated_at DESC NULLS LAST LIMIT $1 OFFSET $2`,
-          [pageSize, offset],
+          `SELECT * FROM materia WHERE ${where}
+           ORDER BY updated_at DESC NULLS LAST LIMIT $${params.length - 1} OFFSET $${params.length}`,
+          params,
         );
         const items = await Promise.all(rows.map(mapMateria));
         return { items, page, pageSize, total: Number(count.rows[0]?.n ?? 0) } satisfies Paged<Materia>;
@@ -312,14 +359,17 @@ export function createAuroraRepositories(): Repositories {
         if (!autorId) {
           throw new Error('autorId é obrigatório ao criar matéria.');
         }
+        const autor = await getAuthorById(autorId);
+        const cidadeId = input.cidadeId ?? autor?.cidadeId ?? 'cid-matriz';
+        const escopo = input.escopo ?? 'local';
         await withClient(async (c) => {
           await c.query('BEGIN');
           try {
             await c.query(
               `INSERT INTO materia (
                  id, slug, editoria, titulo, standfirst, corpo, hero_image_url, hero_caption,
-                 tags, status, pauta_id, updated_at, agendado_para, views, cliques
-               ) VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,'rascunho',$10,$11,$12,0,0)`,
+                 tags, status, pauta_id, cidade_id, escopo, updated_at, agendado_para, views, cliques
+               ) VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,'rascunho',$10,$11,$12,$13,$14,0,0)`,
               [
                 id,
                 slug,
@@ -331,6 +381,8 @@ export function createAuroraRepositories(): Repositories {
                 input.heroCaption ?? null,
                 input.tags ?? [],
                 input.pautaId ?? null,
+                cidadeId,
+                escopo,
                 agora,
                 input.agendadoPara ?? null,
               ],
@@ -364,7 +416,9 @@ export function createAuroraRepositories(): Repositories {
           `UPDATE materia SET
              slug = $2, editoria = $3, titulo = $4, standfirst = $5, corpo = $6::jsonb,
              hero_image_url = $7, hero_caption = $8, tags = $9, pauta_id = $10,
-             agendado_para = $11, updated_at = $12
+             agendado_para = $11, updated_at = $12,
+             cidade_id = COALESCE($13, cidade_id),
+             escopo = COALESCE($14, escopo)
            WHERE id = $1`,
           [
             id,
@@ -379,6 +433,8 @@ export function createAuroraRepositories(): Repositories {
             input.pautaId !== undefined ? input.pautaId || null : cur.pautaId ?? null,
             input.agendadoPara !== undefined ? input.agendadoPara || null : cur.agendadoPara ?? null,
             agora,
+            input.cidadeId ?? null,
+            input.escopo ?? null,
           ],
         );
         if (input.autorId) {
@@ -539,8 +595,15 @@ export function createAuroraRepositories(): Repositories {
     },
 
     pautas: {
-      async listAbertas(autorId) {
+      async listAbertas(autorId, cidadeId) {
         await ready();
+        const params: unknown[] = [];
+        let sql = `SELECT * FROM pauta WHERE status IN ('aberta','em_producao')`;
+        if (cidadeId) {
+          params.push(cidadeId);
+          sql += ` AND cidade_id = $1`;
+        }
+        sql += ` ORDER BY criado_em DESC`;
         const { rows } = await query<{
           id: string;
           tema: string;
@@ -551,9 +614,8 @@ export function createAuroraRepositories(): Repositories {
           status: string;
           criado_por: string;
           criado_em: Date | string;
-        }>(
-          `SELECT * FROM pauta WHERE status IN ('aberta','em_producao') ORDER BY criado_em DESC`,
-        );
+          cidade_id: string | null;
+        }>(sql, params);
         const out: Pauta[] = [];
         for (const r of rows) {
           const atrib = await query<{ author_id: string }>(
@@ -561,7 +623,8 @@ export function createAuroraRepositories(): Repositories {
             [r.id],
           );
           const atribuidos = atrib.rows.map((x) => x.author_id);
-          if (autorId && !atribuidos.includes(autorId)) continue;
+          // Pautas sem atribuição são gerais; pautas atribuídas são privadas ao jornalista.
+          if (autorId && atribuidos.length > 0 && !atribuidos.includes(autorId)) continue;
           out.push({
             id: r.id,
             tema: r.tema,
@@ -573,6 +636,7 @@ export function createAuroraRepositories(): Repositories {
             status: r.status as Pauta['status'],
             criadoPor: r.criado_por,
             criadoEm: iso(r.criado_em) ?? new Date().toISOString(),
+            cidadeId: r.cidade_id ?? undefined,
           });
         }
         return out;
@@ -581,10 +645,11 @@ export function createAuroraRepositories(): Repositories {
         await ready();
         const id = `pt-${randomUUID()}`;
         const agora = new Date().toISOString();
+        const cidadeId = input.cidadeId ?? 'cid-matriz';
         await withClient(async (c) => {
           await c.query(
-            `INSERT INTO pauta (id, tema, descricao, categoria_sugerida, prioridade, prazo, status, criado_por, criado_em)
-             VALUES ($1,$2,$3,$4,$5,$6,'aberta',$7,$8)`,
+            `INSERT INTO pauta (id, tema, descricao, categoria_sugerida, prioridade, prazo, status, criado_por, criado_em, cidade_id)
+             VALUES ($1,$2,$3,$4,$5,$6,'aberta',$7,$8,$9)`,
             [
               id,
               input.tema,
@@ -594,6 +659,7 @@ export function createAuroraRepositories(): Repositories {
               input.prazo ?? null,
               input.criadoPor,
               agora,
+              cidadeId,
             ],
           );
           for (const a of input.atribuidos ?? []) {
@@ -828,6 +894,21 @@ export function createAuroraRepositories(): Repositories {
         await ready();
         return getAuthorById(id);
       },
+      async listByPapel(papel, cidadeId) {
+        await ready();
+        if (cidadeId) {
+          const { rows } = await query<AuthorRow>(
+            `SELECT * FROM author WHERE papel = $1 AND cidade_id = $2 ORDER BY nome`,
+            [papel, cidadeId],
+          );
+          return rows.map(mapAuthor);
+        }
+        const { rows } = await query<AuthorRow>(
+          `SELECT * FROM author WHERE papel = $1 ORDER BY nome`,
+          [papel],
+        );
+        return rows.map(mapAuthor);
+      },
       async ensureFromCognito(input) {
         await ready();
         const { rows } = await query<AuthorRow>(
@@ -835,25 +916,137 @@ export function createAuroraRepositories(): Repositories {
           [input.sub],
         );
         if (rows[0]) {
-          // Atualiza nome se mudou
+          // Atualiza nome se mudou; cidade só se explicitamente enviada
           if (input.nome && input.nome !== rows[0].nome) {
             await query(`UPDATE author SET nome = $2 WHERE id = $1`, [rows[0].id, input.nome]);
-            return { ...mapAuthor(rows[0]), nome: input.nome };
           }
-          return mapAuthor(rows[0]);
+          if (input.cidadeId !== undefined) {
+            await query(`UPDATE author SET cidade_id = $2 WHERE id = $1`, [
+              rows[0].id,
+              input.cidadeId,
+            ]);
+          }
+          const refreshed = await getAuthorById(rows[0].id);
+          return refreshed ?? mapAuthor(rows[0]);
         }
         const id = `a-${randomUUID()}`;
         const nome = input.nome || input.email || 'Redação Lupa';
+        const cidadeId =
+          input.papel === 'admin' ? null : (input.cidadeId ?? 'cid-matriz');
         await query(
-          `INSERT INTO author (id, nome, bio, avatar_url, papel, cognito_sub)
-           VALUES ($1,$2,NULL,NULL,$3,$4)`,
-          [id, nome, input.papel, input.sub],
+          `INSERT INTO author (id, nome, bio, avatar_url, papel, cognito_sub, cidade_id)
+           VALUES ($1,$2,NULL,NULL,$3,$4,$5)`,
+          [id, nome, input.papel, input.sub, cidadeId],
         );
         return {
           id,
           nome,
           papel: input.papel,
+          cidadeId: cidadeId ?? undefined,
         };
+      },
+      async setCidade(authorId, cidadeId) {
+        await ready();
+        await query(`UPDATE author SET cidade_id = $2 WHERE id = $1`, [authorId, cidadeId]);
+        const a = await getAuthorById(authorId);
+        if (!a) throw new Error(`Author ${authorId} não encontrado`);
+        return a;
+      },
+    },
+
+    cidades: {
+      async list() {
+        await ready();
+        const { rows } = await query<CidadeRow>(`SELECT * FROM cidade ORDER BY nome`);
+        return rows.map(mapCidade);
+      },
+      async getById(id) {
+        await ready();
+        const { rows } = await query<CidadeRow>(`SELECT * FROM cidade WHERE id = $1`, [id]);
+        return rows[0] ? mapCidade(rows[0]) : null;
+      },
+      async getBySlug(slug) {
+        await ready();
+        const { rows } = await query<CidadeRow>(`SELECT * FROM cidade WHERE slug = $1`, [slug]);
+        return rows[0] ? mapCidade(rows[0]) : null;
+      },
+      async criar(input: CriarCidadeInput) {
+        await ready();
+        const id = `cid-${randomUUID()}`;
+        const slug = (input.slug || input.nome)
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '');
+        const agora = new Date().toISOString();
+        await query(
+          `INSERT INTO cidade (id, nome, uf, slug, status, diretor_author_id, permite_estadual, permite_nacional, criado_em)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+          [
+            id,
+            input.nome.trim(),
+            input.uf.trim().toUpperCase().slice(0, 2),
+            slug,
+            input.status ?? 'trial',
+            input.diretorAuthorId ?? null,
+            input.permiteEstadual ?? true,
+            input.permiteNacional ?? false,
+            agora,
+          ],
+        );
+        if (input.diretorAuthorId) {
+          await query(`UPDATE author SET cidade_id = $2, papel = 'diretor' WHERE id = $1`, [
+            input.diretorAuthorId,
+            id,
+          ]);
+        }
+        const c = await this.getById(id);
+        if (!c) throw new Error('Falha ao criar cidade');
+        return c;
+      },
+      async atualizar(id, input) {
+        await ready();
+        const cur = await this.getById(id);
+        if (!cur) throw new Error(`Cidade ${id} não encontrada`);
+        const agora = new Date().toISOString();
+        const slug = input.slug
+          ? input.slug
+              .toLowerCase()
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/(^-|-$)/g, '')
+          : cur.slug;
+        await query(
+          `UPDATE cidade SET
+             nome = $2, uf = $3, slug = $4, status = $5,
+             diretor_author_id = $6, permite_estadual = $7, permite_nacional = $8,
+             atualizado_em = $9
+           WHERE id = $1`,
+          [
+            id,
+            input.nome?.trim() ?? cur.nome,
+            (input.uf ?? cur.uf).trim().toUpperCase().slice(0, 2),
+            slug,
+            input.status ?? cur.status,
+            input.diretorAuthorId !== undefined
+              ? input.diretorAuthorId || null
+              : cur.diretorAuthorId ?? null,
+            input.permiteEstadual ?? cur.permiteEstadual,
+            input.permiteNacional ?? cur.permiteNacional,
+            agora,
+          ],
+        );
+        if (input.diretorAuthorId) {
+          await query(`UPDATE author SET cidade_id = $2, papel = 'diretor' WHERE id = $1`, [
+            input.diretorAuthorId,
+            id,
+          ]);
+        }
+        const c = await this.getById(id);
+        if (!c) throw new Error(`Cidade ${id} não encontrada após update`);
+        return c;
       },
     },
   };

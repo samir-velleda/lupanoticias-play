@@ -60,6 +60,30 @@ do
   copy_dep "$dep"
 done
 
+# AWS SDK v3 (client-s3 + presigner) — modular; standalone pode omitir se external.
+# Copia pacotes @aws-sdk e @smithy usados em runtime do upload.
+copy_aws_tree() {
+  local scope="$1"
+  local src=""
+  for base in "$WEB/node_modules/$scope" "$ROOT/node_modules/$scope"; do
+    if [ -d "$base" ]; then src="$base"; break; fi
+  done
+  if [ -z "$src" ]; then
+    echo "[package-web] AVISO: não encontrado $scope"
+    return 0
+  fi
+  mkdir -p "$OUT/$SRVDIR/node_modules"
+  # Copia árvore inteira do scope (pequena o bastante para Lambda zip)
+  if [ ! -d "$OUT/$SRVDIR/node_modules/$scope" ]; then
+    cp -R "$src" "$OUT/$SRVDIR/node_modules/$scope"
+    echo "[package-web] vendored: $scope"
+  fi
+}
+copy_aws_tree "@aws-sdk"
+copy_aws_tree "@smithy"
+# Dependências comuns do SDK
+for dep in tslib bowser; do copy_dep "$dep"; done
+
 # 4) Remove sharp (binário nativo por-plataforma; imagens unoptimized → nunca usado)
 rm -rf "$OUT/node_modules/sharp" "$OUT/node_modules/@img" \
        "$OUT/$SRVDIR/node_modules/sharp" "$OUT/$SRVDIR/node_modules/@img"

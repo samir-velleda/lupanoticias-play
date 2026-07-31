@@ -153,7 +153,41 @@ CREATE TABLE IF NOT EXISTS playlist_item (
   ordem INT NOT NULL DEFAULT 0,
   PRIMARY KEY (playlist_id, media_id)
 );
+
+CREATE TABLE IF NOT EXISTS cidade (
+  id TEXT PRIMARY KEY,
+  nome TEXT NOT NULL,
+  uf TEXT NOT NULL,
+  slug TEXT NOT NULL UNIQUE,
+  status TEXT NOT NULL DEFAULT 'trial',
+  diretor_author_id TEXT,
+  permite_estadual BOOLEAN NOT NULL DEFAULT TRUE,
+  permite_nacional BOOLEAN NOT NULL DEFAULT FALSE,
+  criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  atualizado_em TIMESTAMPTZ
+);
 `;
+
+/** Migrações aditivas (idempotentes) — multi-cidade / licenças. */
+const MIGRATIONS = [
+  `ALTER TABLE author ADD COLUMN IF NOT EXISTS cidade_id TEXT`,
+  `ALTER TABLE materia ADD COLUMN IF NOT EXISTS cidade_id TEXT`,
+  `ALTER TABLE materia ADD COLUMN IF NOT EXISTS escopo TEXT NOT NULL DEFAULT 'local'`,
+  `ALTER TABLE pauta ADD COLUMN IF NOT EXISTS cidade_id TEXT`,
+  `ALTER TABLE media ADD COLUMN IF NOT EXISTS cidade_id TEXT`,
+  `CREATE INDEX IF NOT EXISTS idx_author_cidade ON author(cidade_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_materia_cidade ON materia(cidade_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_materia_escopo ON materia(escopo)`,
+  `CREATE INDEX IF NOT EXISTS idx_pauta_cidade ON pauta(cidade_id)`,
+  // Cidade matriz (tenant default) — ON CONFLICT por id
+  `INSERT INTO cidade (id, nome, uf, slug, status, permite_estadual, permite_nacional, criado_em)
+   VALUES ('cid-matriz', 'Lupa Matriz', 'BR', 'matriz', 'ativa', TRUE, TRUE, NOW())
+   ON CONFLICT (id) DO NOTHING`,
+  // Backfill: conteúdo legado → matriz
+  `UPDATE author SET cidade_id = 'cid-matriz' WHERE cidade_id IS NULL AND papel <> 'admin'`,
+  `UPDATE materia SET cidade_id = 'cid-matriz' WHERE cidade_id IS NULL`,
+  `UPDATE pauta SET cidade_id = 'cid-matriz' WHERE cidade_id IS NULL`,
+];
 
 export async function applySchema(): Promise<void> {
   // Executa statement a statement (pg não aceita multi bem com prepared params).
@@ -161,6 +195,9 @@ export async function applySchema(): Promise<void> {
     .map((s) => s.trim())
     .filter(Boolean);
   for (const stmt of parts) {
+    await query(stmt);
+  }
+  for (const stmt of MIGRATIONS) {
     await query(stmt);
   }
 }

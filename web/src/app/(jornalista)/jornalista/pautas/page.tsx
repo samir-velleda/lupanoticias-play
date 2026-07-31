@@ -1,13 +1,21 @@
-import Link from 'next/link';
 import { repositories } from '@/lib/data/repositories';
 import { editoriaNome } from '@/lib/editorias';
 import { formatData } from '@/lib/format';
 import { EmptyState } from '@/components/ui';
+import { exigirGrupo } from '@/lib/auth/session';
+import { contextoEditorial } from '@/lib/tenant';
+import { ConfirmarPautaButton } from '@/components/portal/ConfirmarPautaButton';
 
 const PRIORIDADE: Record<string, string> = { alta: 'Alta', media: 'Média', baixa: 'Baixa' };
 
 export default async function PautasJornalista() {
-  const pautas = await repositories.pautas.listAbertas();
+  const usuario = await exigirGrupo('jornalista', 'diretor', 'admin');
+  const ctx = await contextoEditorial(usuario);
+  const autorId = ctx.author.id;
+  const pautas = await repositories.pautas.listAbertas(
+    ctx.isMaster ? undefined : autorId,
+    ctx.cidadeId ?? undefined,
+  );
   return (
     <div>
       <h1 className="mb-1 font-display text-2xl font-extrabold text-ink">Pautas da semana</h1>
@@ -26,9 +34,7 @@ export default async function PautasJornalista() {
               <h2 className="font-display text-lg font-bold text-ink">{p.tema}</h2>
               <p className="mt-1.5 flex-1 font-serif text-[15px] leading-relaxed text-gray-500">{p.descricao}</p>
               {p.prazo ? <p className="mt-3 font-mono text-[11px] text-gray-400">Prazo: {formatData(p.prazo)}</p> : null}
-              <Link href={`/jornalista/materia/nova?pauta=${p.id}`} className="mt-4 self-start rounded bg-ink px-4 py-2 font-display text-sm font-bold text-white">
-                Escrever matéria
-              </Link>
+              <ConfirmarPautaButton pautaId={p.id} />
             </article>
           ))}
         </div>

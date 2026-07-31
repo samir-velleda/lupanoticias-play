@@ -5,6 +5,12 @@ import { repositories } from '@/lib/data/repositories';
 import { exigirGrupo } from '@/lib/auth/session';
 import { autorIdDoUsuario } from '@/lib/auth/perfil';
 import { isEditoriaSlug } from '@/lib/editorias';
+import {
+  contextoEditorial,
+  escopoPermitido,
+  isEscopo,
+  licencaPermiteEscrita,
+} from '@/lib/tenant';
 import { isNextControlFlowError, mensagemErro, safeRevalidatePath } from '@/lib/cache-safe';
 import {
   corpoTemConteudo,
@@ -12,7 +18,7 @@ import {
   STATUS_EDITAVEL,
   STATUS_PODE_ENVIAR,
 } from '@/lib/editorial';
-import type { ArticleBlock, CriarMateriaInput, EditoriaSlug } from '@/types';
+import type { ArticleBlock, CriarMateriaInput, EditoriaSlug, EscopoConteudo } from '@/types';
 
 const blocoSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('paragraph'), text: z.string() }),
@@ -31,6 +37,7 @@ const materiaSchema = z.object({
   heroImageUrl: z.string().trim().optional(),
   heroCaption: z.string().trim().optional(),
   pautaId: z.string().trim().optional(),
+  escopo: z.string().default('local').refine((v) => !v || isEscopo(v), 'Escopo inválido'),
 });
 
 export interface SalvarMateriaPayload extends z.input<typeof materiaSchema> {
@@ -78,16 +85,45 @@ export async function salvarMateria(
       return { ok: false, erro: 'Escreva o corpo da matéria antes de enviar para revisão.' };
     }
 
-    const autorId = await autorIdDoUsuario(usuario);
+    const ctx = await contextoEditorial(usuario);
+    const autorId = ctx.author.id;
     if (!autorId) {
       return { ok: false, erro: 'Não foi possível identificar o autor. Faça login novamente.' };
     }
 
+    if (!ctx.isMaster && !licencaPermiteEscrita(ctx.cidade)) {
+      return {
+        ok: false,
+        erro: `Licença ${ctx.cidade?.status ?? 'indisponível'}: não é possível publicar. Contate o Master.`,
+      };
+    }
+
     const isStaff = usuario.grupos.includes('admin') || usuario.grupos.includes('diretor');
+    const cidadeId = ctx.cidadeId ?? ctx.author.cidadeId ?? 'cid-matriz';
+    const escopo = (data.escopo || 'local') as EscopoConteudo;
+    if (!escopoPermitido(ctx.cidade ?? (await repositories.cidades.getById(cidadeId)), escopo)) {
+      return {
+        ok: false,
+        erro: `Escopo "${escopo}" não permitido para esta licença. Use local ou peça liberação ao Master.`,
+      };
+    }
+
+    if (data.pautaId) {
+      const pautasDisponiveis = await repositories.pautas.listAbertas(
+        isStaff && ctx.isMaster ? undefined : autorId,
+        ctx.isMaster ? undefined : cidadeId,
+      );
+      if (!pautasDisponiveis.some((p) => p.id === data.pautaId)) {
+        return { ok: false, erro: 'Esta pauta não está disponível para você.' };
+      }
+    }
 
     if (payload.id) {
       const atual = await repositories.materias.getById(payload.id);
       if (!atual) return { ok: false, erro: 'Matéria não encontrada.' };
+      if (!ctx.isMaster && atual.cidadeId && atual.cidadeId !== cidadeId) {
+        return { ok: false, erro: 'Esta matéria pertence a outra cidade/licença.' };
+      }
       const dono = atual.autores.some((a) => a.id === autorId);
       if (!dono && !isStaff) {
         return { ok: false, erro: 'Você não pode editar a matéria de outro autor.' };
@@ -113,6 +149,8 @@ export async function salvarMateria(
       heroCaption: data.heroCaption || undefined,
       pautaId: data.pautaId || undefined,
       autorId,
+      cidadeId,
+      escopo,
     };
 
     let materia = payload.id
@@ -129,8 +167,12 @@ export async function salvarMateria(
     if (payload.enviar) {
       materia = await repositories.materias.enviarParaRevisao(materia.id);
     }
+    if (data.pautaId) {
+      await repositories.pautas.atualizar(data.pautaId, { status: 'em_producao' });
+    }
 
     revalidateEditorial();
+    safeRevalidatePath('/jornalista/pautas');
     return {
       ok: true,
       id: materia.id,
@@ -155,9 +197,13 @@ export async function aprovarMateria(materiaId: string): Promise<AcaoRedacaoResu
   try {
     if (!materiaId?.trim()) return { ok: false, erro: 'ID da matéria inválido.' };
     const usuario = await exigirGrupo('admin', 'diretor');
-    const revisorId = await autorIdDoUsuario(usuario);
+    const ctx = await contextoEditorial(usuario);
+    const revisorId = ctx.author.id;
     const atual = await repositories.materias.getById(materiaId);
     if (!atual) return { ok: false, erro: 'Matéria não encontrada.' };
+    if (!ctx.isMaster && atual.cidadeId && atual.cidadeId !== ctx.cidadeId) {
+      return { ok: false, erro: 'Matéria de outra cidade/licença.' };
+    }
     if (atual.status === 'publicada') {
       revalidateEditorial();
       return { ok: true, statusFinal: 'publicada' };
@@ -184,9 +230,13 @@ export async function recusarMateria(
     if (!justificativa?.trim()) {
       return { ok: false, erro: 'Justificativa é obrigatória.' };
     }
-    const revisorId = await autorIdDoUsuario(usuario);
+    const ctx = await contextoEditorial(usuario);
+    const revisorId = ctx.author.id;
     const atual = await repositories.materias.getById(materiaId);
     if (!atual) return { ok: false, erro: 'Matéria não encontrada.' };
+    if (!ctx.isMaster && atual.cidadeId && atual.cidadeId !== ctx.cidadeId) {
+      return { ok: false, erro: 'Matéria de outra cidade/licença.' };
+    }
     if (atual.status === 'recusada' || atual.status === 'em_correcao') {
       revalidateEditorial();
       return { ok: true, statusFinal: atual.status };

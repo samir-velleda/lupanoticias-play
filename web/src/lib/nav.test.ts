@@ -21,12 +21,23 @@ describe('casaRota', () => {
 });
 
 describe('hrefAtivo — nav dos portais (prefixo mais longo)', () => {
-  const admin = ['/admin', '/admin/redacao', '/admin/relatorios', '/admin/usuarios'];
+  const admin = [
+    '/admin',
+    '/admin/redacao',
+    '/admin/redacao/pautas',
+    '/admin/relatorios',
+    '/admin/usuarios',
+  ];
 
   it('o índice /admin acende SÓ na própria /admin, não nas sub-páginas', () => {
     expect(hrefAtivo('/admin', admin)).toBe('/admin');
     expect(hrefAtivo('/admin/usuarios', admin)).toBe('/admin/usuarios');
     expect(hrefAtivo('/admin/redacao', admin)).toBe('/admin/redacao');
+  });
+
+  it('pautas vence o prefixo "Redação" (/admin/redacao)', () => {
+    expect(hrefAtivo('/admin/redacao/pautas', admin)).toBe('/admin/redacao/pautas');
+    expect(hrefAtivo('/admin/redacao/pautas/nova', admin)).toBe('/admin/redacao/pautas');
   });
 
   const jornalista = ['/jornalista', '/jornalista/pautas', '/jornalista/materia/nova', '/jornalista/correcoes'];

@@ -5,6 +5,7 @@
  */
 import type {
   Author,
+  Cidade,
   Editoria,
   EditoriaSlug,
   Materia,
@@ -15,6 +16,31 @@ import type {
   AdCampaign,
   AdCreative,
 } from '@/types';
+
+/** Tenants seed — matriz (rede) + Campinas (licença exemplo). */
+export const cidades: Cidade[] = [
+  {
+    id: 'cid-matriz',
+    nome: 'Lupa Matriz',
+    uf: 'BR',
+    slug: 'matriz',
+    status: 'ativa',
+    permiteEstadual: true,
+    permiteNacional: true,
+    criadoEm: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'cid-campinas',
+    nome: 'Campinas',
+    uf: 'SP',
+    slug: 'campinas',
+    status: 'ativa',
+    diretorAuthorId: 'a-7',
+    permiteEstadual: true,
+    permiteNacional: false,
+    criadoEm: '2026-06-01T00:00:00Z',
+  },
+];
 
 export const editorias: Editoria[] = [
   { slug: 'politica', nome: 'Política', descricao: 'Congresso, governo, eleições e Justiça.' },
@@ -30,12 +56,15 @@ export const editorias: Editoria[] = [
 ];
 
 export const authors: Author[] = [
-  { id: 'a-1', nome: 'Helena Prado', papel: 'diretor', bio: 'Diretora de Redação da Lupa Notícias.', avatarUrl: '/avatars/a-1.png' },
-  { id: 'a-2', nome: 'Rafael Menezes', papel: 'jornalista', bio: 'Repórter de Política em Brasília.', avatarUrl: '/avatars/a-2.png' },
-  { id: 'a-3', nome: 'Beatriz Loureiro', papel: 'jornalista', bio: 'Cobre Economia e mercado de trabalho.', avatarUrl: '/avatars/a-3.png' },
-  { id: 'a-4', nome: 'Caio Ferreira', papel: 'jornalista', bio: 'Editor de Tecnologia e Ciência.', avatarUrl: '/avatars/a-4.png' },
-  { id: 'a-5', nome: 'Marina Alencar', papel: 'jornalista', bio: 'Colunista de comportamento e cultura.', avatarUrl: '/avatars/a-5.png' },
-  { id: 'a-6', nome: 'Otávio Bastos', papel: 'jornalista', bio: 'Colunista de economia política.', avatarUrl: '/avatars/a-6.png' },
+  { id: 'a-0', nome: 'Master Lupa', papel: 'admin', bio: 'Administrador da plataforma (Master).' },
+  { id: 'a-1', nome: 'Helena Prado', papel: 'diretor', bio: 'Diretora de Redação da Lupa Matriz.', avatarUrl: '/avatars/a-1.png', cidadeId: 'cid-matriz' },
+  { id: 'a-2', nome: 'Rafael Menezes', papel: 'jornalista', bio: 'Repórter de Política em Brasília.', avatarUrl: '/avatars/a-2.png', cidadeId: 'cid-matriz' },
+  { id: 'a-3', nome: 'Beatriz Loureiro', papel: 'jornalista', bio: 'Cobre Economia e mercado de trabalho.', avatarUrl: '/avatars/a-3.png', cidadeId: 'cid-matriz' },
+  { id: 'a-4', nome: 'Caio Ferreira', papel: 'jornalista', bio: 'Editor de Tecnologia e Ciência.', avatarUrl: '/avatars/a-4.png', cidadeId: 'cid-matriz' },
+  { id: 'a-5', nome: 'Marina Alencar', papel: 'jornalista', bio: 'Colunista de comportamento e cultura.', avatarUrl: '/avatars/a-5.png', cidadeId: 'cid-matriz' },
+  { id: 'a-6', nome: 'Otávio Bastos', papel: 'jornalista', bio: 'Colunista de economia política.', avatarUrl: '/avatars/a-6.png', cidadeId: 'cid-matriz' },
+  { id: 'a-7', nome: 'Paula Mendes', papel: 'diretor', bio: 'Diretora da licença Campinas.', cidadeId: 'cid-campinas' },
+  { id: 'a-8', nome: 'Diego Nunes', papel: 'jornalista', bio: 'Repórter local de Campinas.', cidadeId: 'cid-campinas' },
 ];
 
 const by = (id: string): Author => authors.find((a) => a.id === id)!;
@@ -46,6 +75,7 @@ function cover(_seed: string): string {
   return '';
 }
 
+/** Seed de matérias; escopo/cidadeId default aplicados no mock runtime se ausentes. */
 export const materias: Materia[] = [
   {
     id: 'm-1',
@@ -67,6 +97,8 @@ export const materias: Materia[] = [
     heroCaption: 'Sessão da comissão especial nesta terça.',
     tags: ['reforma tributária', 'congresso', 'impostos'],
     status: 'publicada',
+    escopo: 'local',
+    cidadeId: 'cid-matriz',
     publishedAt: '2026-07-01T08:20:00Z',
     updatedAt: '2026-07-01T09:05:00Z',
     readingMinutes: 6,
@@ -89,6 +121,8 @@ export const materias: Materia[] = [
     heroImageUrl: cover('clima'),
     tags: ['clima', 'metano', 'cop'],
     status: 'publicada',
+    escopo: 'local',
+    cidadeId: 'cid-matriz',
     publishedAt: '2026-07-01T06:40:00Z',
     readingMinutes: 4,
     views: 18800,
@@ -109,6 +143,8 @@ export const materias: Materia[] = [
     heroImageUrl: cover('selecao'),
     tags: ['seleção', 'copa'],
     status: 'publicada',
+    escopo: 'local',
+    cidadeId: 'cid-matriz',
     publishedAt: '2026-06-30T23:10:00Z',
     readingMinutes: 3,
     views: 31200,
@@ -130,6 +166,8 @@ export const materias: Materia[] = [
     heroImageUrl: cover('ia'),
     tags: ['inteligência artificial', 'jornalismo'],
     status: 'publicada',
+    escopo: 'local',
+    cidadeId: 'cid-matriz',
     publishedAt: '2026-06-30T14:30:00Z',
     readingMinutes: 7,
     relatedMediaId: 'p-1',
@@ -150,6 +188,8 @@ export const materias: Materia[] = [
     heroImageUrl: cover('metro'),
     tags: ['mobilidade', 'metrô'],
     status: 'publicada',
+    escopo: 'local',
+    cidadeId: 'cid-matriz',
     publishedAt: '2026-06-30T11:00:00Z',
     readingMinutes: 4,
     views: 9800,
@@ -169,6 +209,8 @@ export const materias: Materia[] = [
     heroImageUrl: cover('sono'),
     tags: ['sono', 'memória', 'neurociência'],
     status: 'publicada',
+    escopo: 'local',
+    cidadeId: 'cid-matriz',
     publishedAt: '2026-06-29T19:15:00Z',
     readingMinutes: 5,
     views: 7400,
@@ -188,6 +230,8 @@ export const materias: Materia[] = [
     heroImageUrl: cover('festival'),
     tags: ['cinema', 'festival'],
     status: 'publicada',
+    escopo: 'local',
+    cidadeId: 'cid-matriz',
     publishedAt: '2026-06-29T13:00:00Z',
     readingMinutes: 4,
     views: 6100,
@@ -207,6 +251,8 @@ export const materias: Materia[] = [
     heroImageUrl: cover('bc'),
     tags: ['juros', 'inflação', 'banco central'],
     status: 'publicada',
+    escopo: 'local',
+    cidadeId: 'cid-matriz',
     publishedAt: '2026-06-29T18:30:00Z',
     readingMinutes: 3,
     views: 13400,
@@ -225,6 +271,8 @@ export const materias: Materia[] = [
     heroImageUrl: cover('vacina'),
     tags: ['vacinação', 'saúde pública'],
     status: 'publicada',
+    escopo: 'local',
+    cidadeId: 'cid-matriz',
     publishedAt: '2026-06-28T10:20:00Z',
     readingMinutes: 3,
     views: 8700,
@@ -245,6 +293,8 @@ export const materias: Materia[] = [
     heroImageUrl: cover('plenario'),
     tags: ['congresso', 'pauta'],
     status: 'publicada',
+    escopo: 'local',
+    cidadeId: 'cid-matriz',
     publishedAt: '2026-07-01T07:10:00Z',
     readingMinutes: 5,
     views: 11200,
@@ -265,6 +315,8 @@ export const materias: Materia[] = [
     heroImageUrl: cover('coluna-1'),
     tags: ['tecnologia', 'comportamento'],
     status: 'publicada',
+    escopo: 'local',
+    cidadeId: 'cid-matriz',
     publishedAt: '2026-06-30T09:00:00Z',
     readingMinutes: 4,
     views: 5200,
@@ -284,6 +336,8 @@ export const materias: Materia[] = [
     heroImageUrl: cover('coluna-2'),
     tags: ['economia', 'fiscal'],
     status: 'publicada',
+    escopo: 'local',
+    cidadeId: 'cid-matriz',
     publishedAt: '2026-06-29T09:00:00Z',
     readingMinutes: 4,
     views: 4300,
@@ -462,6 +516,7 @@ export const pautas: Pauta[] = [
     prazo: '2026-07-05T00:00:00Z',
     atribuidos: ['a-3'],
     status: 'em_producao',
+    cidadeId: 'cid-matriz',
     criadoPor: 'a-1',
     criadoEm: '2026-06-28T09:00:00Z',
   },
@@ -473,6 +528,7 @@ export const pautas: Pauta[] = [
     prioridade: 'media',
     atribuidos: ['a-2'],
     status: 'aberta',
+    cidadeId: 'cid-matriz',
     criadoPor: 'a-1',
     criadoEm: '2026-06-27T14:00:00Z',
   },

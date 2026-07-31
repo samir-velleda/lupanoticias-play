@@ -4,6 +4,8 @@
  */
 import type {
   Author,
+  Cidade,
+  CriarCidadeInput,
   Editoria,
   EditoriaSlug,
   Materia,
@@ -15,6 +17,7 @@ import type {
   RevisaoMateria,
   StatusMateria,
   PageOpts,
+  Papel,
   Paged,
   CriarMateriaInput,
   CreateMediaInput,
@@ -52,7 +55,8 @@ export interface Repositories {
     listRevisoes(materiaId: string): Promise<RevisaoMateria[]>;
   };
   pautas: {
-    listAbertas(autorId?: string): Promise<Pauta[]>;
+    /** autorId filtra atribuição; cidadeId filtra tenant (omitido = Master). */
+    listAbertas(autorId?: string, cidadeId?: string): Promise<Pauta[]>;
     criar(input: Omit<Pauta, 'id' | 'criadoEm' | 'status'>): Promise<Pauta>;
     atualizar(id: string, input: Partial<Pauta>): Promise<Pauta>;
   };
@@ -89,7 +93,18 @@ export interface Repositories {
   };
   authors: {
     getById(id: string): Promise<Author | null>;
+    /** Perfis por papel; opcionalmente só da cidade. */
+    listByPapel(papel: Papel, cidadeId?: string): Promise<Author[]>;
     ensureFromCognito(input: EnsureAuthorInput): Promise<Author>;
+    /** Master vincula author a uma cidade (ou remove com null). */
+    setCidade(authorId: string, cidadeId: string | null): Promise<Author>;
+  };
+  cidades: {
+    list(): Promise<Cidade[]>;
+    getById(id: string): Promise<Cidade | null>;
+    getBySlug(slug: string): Promise<Cidade | null>;
+    criar(input: CriarCidadeInput): Promise<Cidade>;
+    atualizar(id: string, input: Partial<CriarCidadeInput>): Promise<Cidade>;
   };
 }
 

@@ -10,6 +10,7 @@ import type {
   AdMetrics,
   AdSlotId,
   Author,
+  Cidade,
   CreateMediaInput,
   CriarMateriaInput,
   Editoria,
@@ -25,12 +26,14 @@ import type {
   RelatorioOpts,
   RelatorioResultado,
   RevisaoMateria,
+  StatusLicenca,
   StatusMateria,
 } from '@/types';
 import {
   adCampaigns,
   adCreatives,
-  authors,
+  authors as seedAuthors,
+  cidades as seedCidades,
   editoriaNome,
   editorias,
   materias as seedMaterias,
@@ -41,9 +44,15 @@ import {
 } from './data';
 
 // ---- estado mutável em memória (cópias dos seeds) ----
-const _materias: Materia[] = seedMaterias.map((m) => ({ ...m }));
+const _authors: Author[] = seedAuthors.map((a) => ({ ...a }));
+const _cidades: Cidade[] = seedCidades.map((c) => ({ ...c }));
+const _materias: Materia[] = seedMaterias.map((m) => ({
+  ...m,
+  escopo: m.escopo ?? 'local',
+  cidadeId: m.cidadeId ?? 'cid-matriz',
+}));
 const _medias: Media[] = medias.map((m) => ({ ...m }));
-const _pautas: Pauta[] = pautas.map((p) => ({ ...p }));
+const _pautas: Pauta[] = pautas.map((p) => ({ ...p, cidadeId: p.cidadeId ?? 'cid-matriz' }));
 const _modo: ModoAutomatico[] = modoAutomatico.map((m) => ({ ...m }));
 const _campanhas: AdCampaign[] = adCampaigns.map((c) => ({ ...c }));
 const _criativos: AdCreative[] = adCreatives.map((c) => ({ ...c }));
@@ -136,15 +145,19 @@ export function createMockRepositories(): Repositories {
       },
       async listPendentes(opts?: PageOpts) {
         const items = _materias
-          .filter((m) => m.status === 'pendente')
+          .filter(
+            (m) =>
+              m.status === 'pendente' &&
+              (!opts?.cidadeId || m.cidadeId === opts.cidadeId),
+          )
           .sort((a, b) => ordDesc(a.updatedAt, b.updatedAt));
         return paginate(clone(items), opts);
       },
       async criar(input: CriarMateriaInput) {
         const autor: Author =
-          (input.autorId ? authors.find((a) => a.id === input.autorId) : undefined) ??
-          authors.find((a) => a.papel === 'jornalista') ??
-          authors[0];
+          (input.autorId ? _authors.find((a) => a.id === input.autorId) : undefined) ??
+          _authors.find((a) => a.papel === 'jornalista') ??
+          _authors[0]!;
         const nova: Materia = {
           id: nextId('m'),
           slug: slugify(input.titulo),
@@ -159,6 +172,8 @@ export function createMockRepositories(): Repositories {
           status: 'rascunho',
           pautaId: input.pautaId,
           agendadoPara: input.agendadoPara,
+          cidadeId: input.cidadeId ?? autor.cidadeId ?? 'cid-matriz',
+          escopo: input.escopo ?? 'local',
           updatedAt: agora(),
           views: 0,
           cliques: 0,
@@ -172,8 +187,10 @@ export function createMockRepositories(): Repositories {
         const { autorId, ...rest } = input;
         Object.assign(m, rest, { updatedAt: agora() });
         if (input.titulo) m.slug = slugify(input.titulo);
+        if (input.escopo) m.escopo = input.escopo;
+        if (input.cidadeId !== undefined) m.cidadeId = input.cidadeId;
         if (autorId) {
-          const autor = authors.find((a) => a.id === autorId);
+          const autor = _authors.find((a) => a.id === autorId);
           if (autor) m.autores = [autor];
         }
         return clone(m);
@@ -254,12 +271,14 @@ export function createMockRepositories(): Repositories {
     },
 
     pautas: {
-      async listAbertas(autorId?: string) {
+      async listAbertas(autorId?: string, cidadeId?: string) {
         return clone(
           _pautas.filter(
             (p) =>
               (p.status === 'aberta' || p.status === 'em_producao') &&
-              (autorId ? p.atribuidos.includes(autorId) : true),
+              (!cidadeId || p.cidadeId === cidadeId) &&
+              // Pautas sem destinatário são gerais; as demais só aparecem ao jornalista atribuído.
+              (!autorId || p.atribuidos.length === 0 || p.atribuidos.includes(autorId)),
           ),
         );
       },
@@ -269,6 +288,7 @@ export function createMockRepositories(): Repositories {
           id: nextId('pt'),
           status: 'aberta',
           criadoEm: agora(),
+          cidadeId: input.cidadeId ?? 'cid-matriz',
         };
         _pautas.push(nova);
         return clone(nova);
@@ -341,7 +361,7 @@ export function createMockRepositories(): Repositories {
         return clone([...mesmaEditoria, ...resto].slice(0, limit));
       },
       async criarUpload(input: CreateMediaInput) {
-        const autor = authors.find((a) => a.papel === 'jornalista') ?? authors[0];
+        const autor = _authors.find((a) => a.papel === 'jornalista') ?? _authors[0];
         const nova: Media = {
           id: nextId('media'),
           tipo: input.tipo,
@@ -449,15 +469,114 @@ export function createMockRepositories(): Repositories {
 
     authors: {
       async getById(id: string) {
-        return clone(authors.find((a) => a.id === id)) ?? null;
+        return clone(_authors.find((a) => a.id === id)) ?? null;
+      },
+      async listByPapel(papel, cidadeId) {
+        return clone(
+          _authors.filter(
+            (a) => a.papel === papel && (!cidadeId || a.cidadeId === cidadeId),
+          ),
+        );
       },
       async ensureFromCognito(input) {
-        // Mock: reutiliza autor demo por papel (sem Cognito real local).
-        const porPapel =
-          authors.find((a) => a.papel === input.papel) ??
-          authors.find((a) => a.papel === 'jornalista') ??
-          authors[0];
+        // Mock: reutiliza autor demo por papel (+ cidade se informada).
+        let porPapel = _authors.find(
+          (a) =>
+            a.papel === input.papel &&
+            (input.cidadeId ? a.cidadeId === input.cidadeId : true),
+        );
+        if (!porPapel) {
+          porPapel =
+            _authors.find((a) => a.papel === input.papel) ??
+            _authors.find((a) => a.papel === 'jornalista') ??
+            _authors[0]!;
+        }
+        if (input.cidadeId !== undefined && input.cidadeId !== null) {
+          porPapel.cidadeId = input.cidadeId;
+        }
         return clone({ ...porPapel, nome: input.nome ?? porPapel.nome });
+      },
+      async setCidade(authorId, cidadeId) {
+        const a = _authors.find((x) => x.id === authorId);
+        if (!a) throw new Error(`Author ${authorId} não encontrado`);
+        a.cidadeId = cidadeId ?? undefined;
+        return clone(a);
+      },
+    },
+
+    cidades: {
+      async list() {
+        return clone(_cidades.slice().sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')));
+      },
+      async getById(id) {
+        return clone(_cidades.find((c) => c.id === id)) ?? null;
+      },
+      async getBySlug(slug) {
+        return clone(_cidades.find((c) => c.slug === slug)) ?? null;
+      },
+      async criar(input) {
+        const slug = (input.slug || input.nome)
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '');
+        if (_cidades.some((c) => c.slug === slug)) {
+          throw new Error(`Já existe cidade com slug "${slug}".`);
+        }
+        const nova: Cidade = {
+          id: nextId('cid'),
+          nome: input.nome.trim(),
+          uf: input.uf.trim().toUpperCase().slice(0, 2),
+          slug,
+          status: (input.status ?? 'trial') as StatusLicenca,
+          permiteEstadual: input.permiteEstadual ?? true,
+          permiteNacional: input.permiteNacional ?? false,
+          diretorAuthorId: input.diretorAuthorId,
+          criadoEm: agora(),
+        };
+        _cidades.push(nova);
+        if (input.diretorAuthorId) {
+          const d = _authors.find((a) => a.id === input.diretorAuthorId);
+          if (d) {
+            d.cidadeId = nova.id;
+            d.papel = 'diretor';
+          }
+        }
+        return clone(nova);
+      },
+      async atualizar(id, input) {
+        const c = _cidades.find((x) => x.id === id);
+        if (!c) throw new Error(`Cidade ${id} não encontrada`);
+        if (input.nome !== undefined) c.nome = input.nome.trim();
+        if (input.uf !== undefined) c.uf = input.uf.trim().toUpperCase().slice(0, 2);
+        if (input.slug !== undefined) {
+          const slug = input.slug
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/(^-|-$)/g, '');
+          if (_cidades.some((x) => x.slug === slug && x.id !== id)) {
+            throw new Error(`Já existe cidade com slug "${slug}".`);
+          }
+          c.slug = slug;
+        }
+        if (input.status !== undefined) c.status = input.status;
+        if (input.permiteEstadual !== undefined) c.permiteEstadual = input.permiteEstadual;
+        if (input.permiteNacional !== undefined) c.permiteNacional = input.permiteNacional;
+        if (input.diretorAuthorId !== undefined) {
+          c.diretorAuthorId = input.diretorAuthorId || undefined;
+          if (input.diretorAuthorId) {
+            const d = _authors.find((a) => a.id === input.diretorAuthorId);
+            if (d) {
+              d.cidadeId = c.id;
+              d.papel = 'diretor';
+            }
+          }
+        }
+        c.atualizadoEm = agora();
+        return clone(c);
       },
     },
   };

@@ -17,6 +17,30 @@ export type EditoriaSlug =
 
 export type Papel = 'admin' | 'diretor' | 'jornalista';
 
+/** Escopo editorial da matéria na rede multi-cidade. */
+export type EscopoConteudo = 'local' | 'estadual' | 'nacional';
+
+/** Status da licença mensal da cidade. */
+export type StatusLicenca = 'trial' | 'ativa' | 'inadimplente' | 'suspensa' | 'cancelada';
+
+/**
+ * Cidade = tenant/licença.
+ * Admin (Master) gerencia; Diretor opera uma licença; Jornalista pertence a uma cidade.
+ */
+export interface Cidade {
+  id: string;
+  nome: string;
+  uf: string;
+  slug: string;
+  status: StatusLicenca;
+  /** Diretor titular da licença (author.id). */
+  diretorAuthorId?: string;
+  permiteEstadual: boolean;
+  permiteNacional: boolean;
+  criadoEm: string;
+  atualizadoEm?: string;
+}
+
 export type StatusMateria =
   | 'rascunho'
   | 'pendente'
@@ -38,6 +62,8 @@ export interface Author {
   bio?: string;
   avatarUrl?: string;
   papel: Papel;
+  /** null/undefined = Master (admin plataforma) ou ainda sem vínculo. */
+  cidadeId?: string;
 }
 
 export type ArticleBlock =
@@ -60,6 +86,10 @@ export interface Materia {
   tags: string[];
   status: StatusMateria;
   pautaId?: string;
+  /** Tenant de origem (cidade da licença). */
+  cidadeId?: string;
+  /** local = só a cidade; estadual/nacional = rede (se a licença permitir). */
+  escopo: EscopoConteudo;
   publishedAt?: string;
   updatedAt?: string;
   agendadoPara?: string;
@@ -89,6 +119,8 @@ export interface Pauta {
   status: 'aberta' | 'em_producao' | 'concluida' | 'cancelada';
   criadoPor: string;
   criadoEm: string;
+  /** Tenant: pauta do Diretor da cidade. */
+  cidadeId?: string;
 }
 
 export interface ModoAutomatico {
@@ -213,6 +245,8 @@ export interface RelatorioResultado {
 export interface PageOpts {
   page?: number;
   pageSize?: number;
+  /** Filtra por tenant. Omitido = Master (todas). */
+  cidadeId?: string;
 }
 
 export interface Paged<T> {
@@ -242,6 +276,8 @@ export interface CriarMateriaInput {
   agendadoPara?: string;
   /** Autor real (Cognito → author.id). Obrigatório ao criar no Aurora. */
   autorId?: string;
+  cidadeId?: string;
+  escopo?: EscopoConteudo;
 }
 
 export interface EnsureAuthorInput {
@@ -249,6 +285,18 @@ export interface EnsureAuthorInput {
   nome?: string;
   email?: string;
   papel: Papel;
+  /** Vínculo de tenant ao criar/atualizar o author. */
+  cidadeId?: string | null;
+}
+
+export interface CriarCidadeInput {
+  nome: string;
+  uf: string;
+  slug: string;
+  status?: StatusLicenca;
+  permiteEstadual?: boolean;
+  permiteNacional?: boolean;
+  diretorAuthorId?: string;
 }
 
 export interface CreateMediaInput {

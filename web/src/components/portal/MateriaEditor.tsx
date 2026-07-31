@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import type { ArticleBlock, Editoria, Materia, Pauta } from '@/types';
+import type { ArticleBlock, Editoria, EscopoConteudo, Materia, Pauta } from '@/types';
 import { salvarMateria } from '@/lib/actions/materias';
 import { ImageUploadField } from '@/components/media/ImageUploadField';
 import { corpoTemConteudo, limparCorpo } from '@/lib/editorial';
@@ -31,15 +31,20 @@ export function MateriaEditor({
   editorias,
   pautas,
   pautaInicial,
+  permiteEstadual = true,
+  permiteNacional = false,
 }: {
   materia: Materia | null;
   editorias: Editoria[];
   pautas: Pauta[];
   pautaInicial?: string;
+  permiteEstadual?: boolean;
+  permiteNacional?: boolean;
 }) {
   const [titulo, setTitulo] = useState(materia?.titulo ?? '');
   const [standfirst, setStandfirst] = useState(materia?.standfirst ?? '');
   const [editoria, setEditoria] = useState<string>(materia?.editoria ?? editorias[0]?.slug ?? '');
+  const [escopo, setEscopo] = useState<EscopoConteudo>(materia?.escopo ?? 'local');
   const [tags, setTags] = useState<string[]>(materia?.tags ?? []);
   const [tagInput, setTagInput] = useState('');
   const [heroImageUrl, setHeroImageUrl] = useState(materia?.heroImageUrl ?? '');
@@ -86,6 +91,7 @@ export function MateriaEditor({
           titulo,
           standfirst,
           editoria,
+          escopo,
           tags,
           corpo: corpoLimpo,
           heroImageUrl,
@@ -187,6 +193,22 @@ export function MateriaEditor({
               <option key={e.slug} value={e.slug}>{e.nome}</option>
             ))}
           </select>
+        </div>
+        <div>
+          <label className={label} htmlFor="escopo">Escopo (rede)</label>
+          <select
+            id="escopo"
+            value={escopo}
+            onChange={(e) => setEscopo(e.target.value as EscopoConteudo)}
+            className={field}
+          >
+            <option value="local">Local (cidade)</option>
+            {permiteEstadual ? <option value="estadual">Estadual</option> : null}
+            {permiteNacional ? <option value="nacional">Nacional</option> : null}
+          </select>
+          <p className="mt-1 font-serif text-[12px] text-gray-500">
+            Liberado pela licença da cidade. Local sempre permitido.
+          </p>
         </div>
         <div>
           <label className={label} htmlFor="pauta">Vincular pauta</label>

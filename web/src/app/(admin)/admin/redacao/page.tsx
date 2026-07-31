@@ -3,22 +3,48 @@ import { repositories } from '@/lib/data/repositories';
 import { editoriaNome } from '@/lib/editorias';
 import { formatRelativo } from '@/lib/format';
 import { exigirGrupo } from '@/lib/auth/session';
+import { contextoEditorial, rotuloEscopo } from '@/lib/tenant';
 import { StatusBadge } from '@/components/portal/StatusBadge';
 import { EmptyState } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
 
 export default async function RedacaoFila() {
-  await exigirGrupo('admin', 'diretor');
-  const pendentes = await repositories.materias.listPendentes({ pageSize: 50 });
+  const usuario = await exigirGrupo('admin', 'diretor');
+  const ctx = await contextoEditorial(usuario);
+  const pendentes = await repositories.materias.listPendentes({
+    pageSize: 50,
+    cidadeId: ctx.cidadeId ?? undefined,
+  });
+  const cidadeLabel = ctx.cidade
+    ? `${ctx.cidade.nome} (${ctx.cidade.uf})`
+    : ctx.isMaster
+      ? 'Todas as cidades (Master)'
+      : 'Sua cidade';
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="font-display text-2xl font-extrabold text-ink">Diretor de Redação</h1>
-        <p className="mt-1 font-serif text-[15px] text-gray-500">
-          Fila de aprovação — leia a matéria completa antes de publicar ou recusar.
-        </p>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl font-extrabold text-ink">Diretor de Redação</h1>
+          <p className="mt-1 font-serif text-[15px] text-gray-500">
+            Fila de aprovação — {cidadeLabel}. Leia a matéria completa antes de publicar ou recusar.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/admin/redacao/pautas"
+            className="rounded border border-line px-4 py-2 font-display text-sm font-semibold text-ink hover:border-ink"
+          >
+            Ver pautas
+          </Link>
+          <Link
+            href="/admin/redacao/pautas/nova"
+            className="rounded bg-ink px-4 py-2 font-display text-sm font-bold text-white"
+          >
+            Sugerir pauta
+          </Link>
+        </div>
       </div>
 
       {pendentes.items.length === 0 ? (
@@ -43,7 +69,7 @@ export default async function RedacaoFila() {
                 <div className="mb-1.5 flex flex-wrap items-center gap-2">
                   <StatusBadge status={m.status} />
                   <span className="font-mono text-[10px] uppercase tracking-kicker text-gray-400">
-                    {editoriaNome(m.editoria)}
+                    {editoriaNome(m.editoria)} · {rotuloEscopo(m.escopo)}
                   </span>
                   <span className="font-mono text-[10px] text-gray-400">· {autor}</span>
                   {m.updatedAt ? (

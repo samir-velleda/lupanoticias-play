@@ -16,19 +16,44 @@ function Kpi({ label, valor }: { label: string; valor: string }) {
 }
 
 export default async function AdminDashboard() {
-  const [maisLidas, pendentes] = await Promise.all([
+  const [maisLidas, pendentes, cidades] = await Promise.all([
     repositories.materias.listMaisLidas(100),
     repositories.materias.listPendentes({ pageSize: 100 }),
+    repositories.cidades.list(),
   ]);
   const totalViews = maisLidas.reduce((s, m) => s + (m.views ?? 0), 0);
   const totalCliques = maisLidas.reduce((s, m) => s + (m.cliques ?? 0), 0);
   const top = maisLidas.slice(0, 5);
+  const licencasAtivas = cidades.filter((c) => c.status === 'ativa' || c.status === 'trial').length;
 
   return (
     <div>
-      <h1 className="mb-6 font-display text-2xl font-extrabold text-ink">Dashboard</h1>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-display text-2xl font-extrabold text-ink">Dashboard Master</h1>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/admin/cidades"
+            className="rounded border border-line px-4 py-2 font-display text-sm font-semibold text-ink hover:border-ink"
+          >
+            Licenças
+          </Link>
+          <Link
+            href="/admin/redacao/pautas"
+            className="rounded border border-line px-4 py-2 font-display text-sm font-semibold text-ink hover:border-ink"
+          >
+            Ver pautas
+          </Link>
+          <Link
+            href="/admin/redacao/pautas/nova"
+            className="rounded bg-ink px-4 py-2 font-display text-sm font-bold text-white"
+          >
+            Sugerir pauta
+          </Link>
+        </div>
+      </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+        <Kpi label="Licenças ativas" valor={String(licencasAtivas)} />
         <Kpi label="Publicadas" valor={String(maisLidas.length)} />
         <Kpi label="Pendentes" valor={String(pendentes.total)} />
         <Kpi label="Visualizações" valor={formatNumero(totalViews)} />

@@ -11,10 +11,20 @@ import { getAuthConfig, authConfigurada } from './config';
 
 export interface UsuarioAdmin {
   username: string;
+  /** Cognito `sub` — chave estável para `author.cognito_sub`. */
+  sub?: string;
   email?: string;
   nome?: string;
   status?: string;
   grupos: string[];
+}
+
+export interface UsuarioCriado {
+  username: string;
+  sub?: string;
+  email: string;
+  nome: string;
+  grupo: Papel;
 }
 
 let clientCache: CognitoIdentityProviderClient | null = null;
@@ -47,6 +57,7 @@ export async function listarUsuarios(): Promise<UsuarioAdmin[]> {
       }
       return {
         username: u.Username ?? '',
+        sub: attr('sub'),
         email: attr('email'),
         nome: attr('name'),
         status: u.UserStatus,
@@ -57,10 +68,10 @@ export async function listarUsuarios(): Promise<UsuarioAdmin[]> {
 }
 
 /** Cria usuário (envia convite por e-mail) e o adiciona ao grupo/papel. */
-export async function criarUsuario(email: string, nome: string, grupo: Papel): Promise<void> {
+export async function criarUsuario(email: string, nome: string, grupo: Papel): Promise<UsuarioCriado> {
   const c = getAuthConfig();
   if (!authConfigurada(c)) throw new Error('Autenticação não configurada neste ambiente.');
-  await client().send(
+  const created = await client().send(
     new AdminCreateUserCommand({
       UserPoolId: c.userPoolId,
       Username: email,
@@ -75,4 +86,12 @@ export async function criarUsuario(email: string, nome: string, grupo: Papel): P
   await client().send(
     new AdminAddUserToGroupCommand({ UserPoolId: c.userPoolId, Username: email, GroupName: grupo }),
   );
+  const sub = created.User?.Attributes?.find((a) => a.Name === 'sub')?.Value;
+  return {
+    username: created.User?.Username ?? email,
+    sub,
+    email,
+    nome,
+    grupo,
+  };
 }
