@@ -64,8 +64,8 @@ export async function Header() {
 
       {/* Faixa 2 — masthead */}
       <div className="flex items-center justify-between px-5 py-4 sm:px-7">
-        <Link href="/" aria-label="Lupa Notícias — início">
-          <LupaLockup className="h-8 w-auto sm:h-9" />
+        <Link href="/" aria-label="Lupa Notícias — início" className="inline-flex shrink-0 overflow-visible">
+          <LupaLockup className="h-8 w-auto max-w-none sm:h-9" />
         </Link>
         <div className="flex items-center gap-4">
           {live ? (

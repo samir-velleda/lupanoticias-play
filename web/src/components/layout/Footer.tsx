@@ -50,7 +50,7 @@ export function Footer() {
     <footer className="mt-auto bg-ink px-6 pb-6 pt-12 text-on-dark sm:px-11">
       <div className="flex flex-wrap items-start justify-between gap-8 border-b border-dark-line pb-8">
         <div className="max-w-sm">
-          <LupaLockupWhite className="h-6 w-auto" />
+          <LupaLockupWhite className="h-6 w-auto max-w-none overflow-visible" />
           <p className="mt-4 font-serif text-base leading-relaxed text-[#a9a9b0]">
             Jornalismo com foco no que importa. Apuração independente, contexto e
             clareza — todos os dias.

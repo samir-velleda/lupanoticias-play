@@ -1,22 +1,32 @@
-import type { SVGProps } from 'react';
+import type { CSSProperties, SVGProps } from 'react';
 
 /**
  * Lockup (símbolo + wordmark) para FUNDO CLARO.
  * Wordmark Archivo: LUPA 800 (ink) + NOTÍCIAS 500 (gray-700).
- * Fonte: brand/lupa-lockup.svg.
+ * viewBox largo o bastante para não cortar o "S" de NOTÍCIAS.
  */
 export function LupaLockup({
   title = 'Lupa Notícias',
+  style,
+  className,
   ...props
 }: SVGProps<SVGSVGElement> & { title?: string }) {
+  const mergedStyle: CSSProperties = {
+    overflow: 'visible',
+    ...(typeof style === 'object' && style ? style : {}),
+  };
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 330 64"
+      viewBox="0 0 400 64"
+      width={400}
+      height={64}
       fill="none"
       role="img"
       aria-label={title}
       {...props}
+      className={className}
+      style={mergedStyle}
     >
       <g transform="translate(8,8)">
         <path
@@ -32,12 +42,12 @@ export function LupaLockup({
         y="43"
         fontFamily="var(--font-archivo), Archivo, system-ui, sans-serif"
         fontWeight="800"
-        fontSize="36"
-        letterSpacing="-0.6"
+        fontSize="34"
+        letterSpacing="-0.5"
         fill="#0B0B0C"
       >
         LUPA
-        <tspan fontWeight="500" fill="#3A3A3D" dx="7" letterSpacing="0.6">
+        <tspan fontWeight="500" fill="#3A3A3D" dx="6" letterSpacing="0.4">
           NOTÍCIAS
         </tspan>
       </text>

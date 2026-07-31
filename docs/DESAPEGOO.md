@@ -19,12 +19,16 @@ Brechó C2C do Lupa Notícias. Design do protótipo Claude (`Desapegoo.dc.html`)
 - Dados: `lib/data/desapego` (mock in-memory; schema Aurora já no DDL)
 - Upload: `POST /api/desapego/upload-url` → S3 `media/desapego/...` (fallback data URL em dev)
 
-## Fora da Etapa 1
+## Persistência
+
+- `LUPA_USE_AURORA=true` (prod) → tabelas `desapego_vendedor` / `desapego_anuncio` (seed se vazio)
+- Local sem Aurora → mock em memória
+
+## Fora da Etapa 1 / próximo
 
 - Login obrigatório / KYC vendedor
 - Checkout Boovest + escrow (Etapa 3)
 - Avaliações reais, frete integrado
-- Persistência Aurora wired no repo (DDL pronto; app usa mock até Bloco 2)
 
 ## Link no Lupa
 
